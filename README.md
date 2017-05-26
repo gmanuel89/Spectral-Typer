@@ -108,7 +108,7 @@ The spectra files are placed in a folder with the same name as the peaklist file
 
 * **Dump spectral files...**: generates a folder (named as the peaklist matrix file) in which all the spectral files are saved (MSD or TXT) and organized in two subfolders (one for the "Database spectra" and one for the "Sample spectra").
 
-* **Quit**: close the program and the R.
+* **Quit**: close the program and the R session.
 
 ***
 
