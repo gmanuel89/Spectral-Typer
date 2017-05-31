@@ -2,6 +2,11 @@
 
 ***
 
+## Program version
+In order for this Wiki to be applicable, the version of the program must be equal or higher than **2017.05.26.0**.
+
+***
+
 ## Programming language
 [R: The Comprehensive R Archive Network](https://www.r-project.org/)
 
@@ -72,10 +77,19 @@ The spectra files are placed in a folder with the same name as the peaklist file
 * **Intensity tolerance percent**: defines the tolerance (in %) to be used in "signal intensity" comparison to define two intensity-matching signals (between the sample and the database entry)
 
 * **Choose similarity criteria**: defines the way in which the signal intensity comparison between sample spectra and database entry spectra should be performed ("Correlation", "Hierarchical Clustering Analysis - HCA", "Signal intensity", "Similarity index").
-    * Correlation: searches for a similar trend in the signal intensity between the sample and the database entry by computing the "Pearson's correlation" (estimating Pearson's rho) or the "Spearman's rank-order correlation" (estimating Spearman's rho).
-    * HCA: computes the spectral similarity by measuring the distance between the sample and the database entry ("euclidean", "maximum", "manhattan", "canberra", "binary", "minkowsky" distance measures).
-    * Signal intensity: checks if the intensity of the common signals (between the sample and the database entry) is similar by evaluating the difference in terms of percentage of intensity (tolerance %).
-    * Similarity index: computes the similarity index between the sample and the database entry by employing signal intensities.
+    * **_Correlation_**: searches for a similar trend in the signal intensity between the sample and the database entry by computing the "Pearson's correlation" (estimating Pearson's rho) or the "Spearman's rank-order correlation" (estimating Spearman's rho).
+    * **_HCA_**: computes the spectral similarity by measuring the distance between the sample and the database entry.
+        * *Euclidean*: Usual distance between the two vectors (2-norm aka L2-norm : the square root of the sum of the differences squared between two samples (sqrt(sum((x_i - y_i)^2))).
+        * *Maximum*: Maximum distance between two components of x and y (supremum norm).
+        * *Manhattan*: Absolute distance between the two vectors (1-norm aka L-1 norm).
+        * *Canberra*: The sum of the ratios between the absolute value of the sum and the absolute values of the differences between two vectors (sum(|x_i - y_i| / |x_i + y_i|)).
+        * *Binary (asymmetric binary)*: The vectors are regarded as binary bits, so non-zero elements are ‘on’ and zero elements are ‘off’. The distance is the proportion of bits in which only one is on amongst those in which at least one is on.
+        * *Minkowski*: The p-norm, the pth root of the sum of the pth powers of the differences of the components.
+    * **_Signal intensity_**: checks if the intensity of the common signals (between the sample and the database entry) is similar by evaluating the difference in terms of percentage of intensity (tolerance %). Two signals are identified as matching when their difference in intensity is within a certain tolerance percentage value.
+        * *Fixed percentage*: The tolerance value is fixed for every signal across the analysis (defined by the user).
+        * *Peak-wise adjusted percentage*: The tolerance value is adjusted for each peak in the comparison between sample and database entry, the adjustment corresponding to the coefficient of variation of that signal intensity computed over replicates of the database entry and the sample.
+        * *Average coefficient of variation*: The tolerance value is adjusted for comparison between sample and database entry, the adjustment corresponding to the average coefficient of variation of signal intensities computed over replicates of the database entry.
+    * **_Similarity index_**: computes the similarity index between the sample and the database entry by employing signal intensities.
 
 * **Score threshold values**: defines the two values to be used to define the overall score of the spectral comparison ("YES", "NI", "NO").
 
@@ -90,10 +104,20 @@ The spectra files are placed in a folder with the same name as the peaklist file
 * **Spectra preprocessing parameters**: sets the parameters for spectral preprocessing.
     * **_Mass range_**: defines the mass range to which the imported spectra should be cut.
     * **_TOF mode_**: defines if the TOF has been used in the "Linear" or "Reflectron" mode (to adjust the parameters for spectral preprocessing and peak picking).
-    * **_Transform the data_**: selects if data transformation should be performed (applies a mathematical operation to all the intensities, such as square root or logarithm with base e, 2 and 10).
-    * **_Smoothing_**: defines the algorithm for the smoothing ("Savitzky-Golay", "Moving Average", "None") and the strength of the smoothing ("medium", "strong", "stronger").
-    * **_Baseline subtraction_**: defines the algorithm for baseline subtraction ("SNIP", "TopHat", "ConvexHull", "median"). Before selecting the baseline subtraction algorithm, a number defining the value of the specific parameter for the algorithm can be inserted, and the program will read it while setting the baseline subtraction algorithm.
+    * **_Data transformation_**: selects if data transformation should be performed (applies a mathematical operation to all the intensities, among "Square root", "Natural logarithm", "Decimal Logarithm" and "Binary Logarithm").
+    * **_Smoothing_**: defines the algorithm for the spectral smoothing ("Savitzky-Golay", "Moving Average", "None") and the strength of the smoothing ("medium", "strong", "stronger").
+        * *Savitzky-Golay*: It is a process known as convolution, by fitting successive sub-sets of adjacent data points with a low-degree polynomial by the method of linear least squares. (A. Savitzky and M. J. Golay. 1964. Smoothing and differentiation of data by simplified least squares procedures. Analytical chemistry, 36(8), 1627-1639).
+        * *Moving Average*: Given a series of numbers and a fixed subset size, the first element of the moving average is obtained by taking the average of the initial fixed subset of the number series. Then the subset is modified by "shifting forward"; that is, excluding the first number of the series and including the next value in the subset. (Booth et al., San Francisco Estuary and Watershed Science, Volume 4, Issue 2, 2006).
+    * **_Baseline subtraction_**: defines the algorithm for baseline subtraction ("SNIP", "TopHat", "ConvexHull", "median", "None"). Before selecting the baseline subtraction algorithm, a number defining the value of the specific parameter for the algorithm can be inserted, and the program will read it while setting the baseline subtraction algorithm.
+        * *SNIP*: Statistics-sensitive Non-linear Iterative Peak-clipping algorithm (C.G. Ryan, E. Clayton, W.L. Griffin, S.H. Sie, and D.R. Cousens. 1988. Snip, a statistics-sensitive background treatment for the quantitative analysis of pixe spectra in geoscience applications. Nuclear Instruments and Methods in Physics Research Section B: Beam Interactions with Materials and Atoms, 34(3): 396-402).
+        * *TopHat*: This algorithm applies a moving minimum (erosion filter) and subsequently a moving maximum (dilation filter) filter on the intensity values (M. van Herk. 1992. A Fast Algorithm for Local Minimum and Maximum Filters on Rectangular and Octagonal Kernels. Pattern Recognition Letters 13.7: 517-521).
+        * *ConvexHull*: The baseline estimation is based on a convex hull constructed below the spectrum (Andrew, A. M. 1979. Another efficient algorithm for convex hulls in two dimensions. Information Processing Letters, 9(5), 216-219).
+        * *Median*: This baseline estimation uses a moving median.
     * **_Normalization_**: defines the algorithm for normalization ("TIC", "RMS", "PQN", "median", "None"). Before selecting the normalization algorithm, a number defining the normalization mass range can be inserted, and the program will read it while setting the normalization algorithm.
+        * *TIC (Total Ion Current)*: It divides the intensities of the spectrum by the sum of all the intensity values of the spectrum itself (the sum of all the intensities being the spectrum's total current). It becomes less suitable when very intense peak(s) (compared to the others) are present in the spectrum.
+        * *RMS (Root Mean Square)*: It divides the intensities of the spectrum by the square root of the sum of all the intensity values of the spectrum itself squared. Like the TIC, it becomes less suitable when very intense peak(s) (compared to the others) are present in the spectrum.
+        * *PQN (Probabilistic Quotient Normalization)*: It calibrates the spectra using the TIC normalization; then, a median reference spectrum is obtained; the quotients of all intensities of the spectra with those of the reference spectrum are calculated; the median of these quotients is calculated for each spectrum; finally, all the intensity values of each spectrum are divided by the median of the quotients for the spectrum (F. Dieterle, A. Ross, G. Schlotterbeck, and Hans Senn. 2006. Probabilistic quotient normalization as robust method to account for dilution of complex biological mixtures. Application in 1H NMR metabonomics. Analytical Chemistry 78(13): 4281-4290).
+        * *Median*: It divides the intensities of the spectrum by the median of all the intensity values of the spectrum itself. It has been proved to be the most robust normalization method.
     * **_Align spectra_**: selects if alignment of spectra should be performed, by generating a calibration curve ("cubic", "quadratic", "linear", "lowess") employing an automatically generated peaklist ("auto") as reference or by taking the peaks of the "average spectrum" or of the "skyline spectrum" as reference.
     * **_Preprocess spectra in packages of_**: defines the number of spectra to be taken at a time for preprocessing, when the computer resources are limited (taking all the spectra in RAM could cause the computer to freeze).
     * **_Commit preprocessing_**: stores the preprocessing parameters to be applied for analysis.
