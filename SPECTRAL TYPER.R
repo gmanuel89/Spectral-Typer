@@ -697,8 +697,8 @@ functions_mass_spectrometry <- function() {
     remove_low_intensity_peaks <<- function(peaks, low_intensity_peak_removal_threshold_percent = 1, low_intensity_peak_removal_threshold_method = "element-wise", allow_parallelization = FALSE) {
         ### Load the required libraries
         require(parallel)
-require(MALDIquant)
-require(XML)
+        require(MALDIquant)
+        require(XML)
         ### Fix the percentage value
         if (low_intensity_peak_removal_threshold_percent < 0) {
             low_intensity_peak_removal_threshold_percent <- 0
@@ -1904,6 +1904,8 @@ require(XML)
     #################################################### SPECTRA GROUPING (CLASSES)
     # The functions takes a list of spectra (MALDIquant) and generates a list of representative spectra, averaging spectra according to the class they belong to, generating one average spectrum per class.
     group_spectra_class <<- function(spectra, class_list, grouping_method = "mean", spectra_format = "imzml", class_in_file_path = TRUE, class_in_file_name = FALSE, tof_mode = "linear", preprocessing_parameters = list(mass_range = NULL, transformation_algorithm = NULL, smoothing_algorithm = "SavitzkyGolay", smoothing_strength = "medium", baseline_subtraction_algorithm = "SNIP", baseline_subtraction_algorithm_parameter = 100, normalization_algorithm = "TIC", normalization_mass_range = NULL, preprocess_spectra_in_packages_of = 0, spectral_alignment_algorithm = "cubic", spectral_alignment_reference = "average spectrum"), allow_parallelization = FALSE) {
+        require(MALDIquant)
+        require(XML)
         ##### Spectral preprocessing
         if (!is.null(preprocessing_parameters) && is.list(preprocessing_parameters) && length(preprocessing_parameters) > 0) {
             spectra <- preprocess_spectra(spectra, tof_mode = tof_mode, preprocessing_parameters = preprocessing_parameters, allow_parallelization = allow_parallelization)
@@ -4991,20 +4993,6 @@ require(XML)
     # This function iteratively runs the embedded-rfe feature selection function onto the same input objects as that function, in order to find the best combination of parameters (preprocessing, feature reranking) for the feature selection. It returns the same elements of the embedded_rfe function, but the best chosen after trying all of the parameter combinations.
     # The function allows for the use of several feature selection algorithms.
     automated_embedded_rfe <<- function(training_set, features_to_select = 20, selection_method = "pls", model_tuning = c("embedded", "after"), model_tune_grid = list(ncomp = 1:5), selection_metric = "Accuracy", cv_repeats_control = 5, k_fold_cv_control = 10, discriminant_attribute = "Class", non_features = c("Sample", "Class"), seed = NULL, automatically_select_features = TRUE, generate_plots = TRUE, preprocessing = c("center","scale"), allow_parallelization = FALSE, feature_reranking = FALSE, test_set = NULL, positive_class_cv = NULL, try_combination_of_parameters = TRUE) {
-        # Load the required libraries
-        require(caret)
-        require(stats)
-        require(pROC)
-        require(nnet)
-        require(e1071)
-        require(kernlab)
-        require(MASS)
-        require(klaR)
-        require(pls)
-        require(randomForest)
-        require(lda)
-        require(SparseM)
-        require(stringi)
         if (try_combination_of_parameters == TRUE) {
             ### Establish the combination of parameters (preprocessing + feature reranking) to establish the best model
             # Inizialize the output of combination of parameters
@@ -5936,6 +5924,12 @@ require(XML)
     # Each sample gets compared with each entry in the database, separately.
     # Parallel implemented.
     spectral_typer_score_correlation_matrix <<- function(spectra_database, spectra_test, peaks_database, peaks_test, filepath_database, filepath_test, class_list_library = NULL, peaks_filtering_percentage_threshold = 5, low_intensity_percentage_threshold = 0, low_intensity_threshold_method = "element-wise", tof_mode = "linear", correlation_method = "spearman", intensity_correction_coefficient = 1, spectra_format = "brukerflex", spectra_path_output = TRUE, score_only = FALSE, allow_parallelization = FALSE, score_threshold_values = c(1.7, 2)) {
+        require(MALDIquant)
+        require(XML)
+        require(corrplot)
+        require(weights)
+        require(stats)
+        require(parallel)
         ### Fix the score intensity threshold values
         if (!is.numeric(score_threshold_values) || (is.numeric(score_threshold_values) && length(score_threshold_values) != 2)) {
             score_threshold_values <- c(1.7, 2)
@@ -5947,12 +5941,6 @@ require(XML)
                 score_threshold_values[2] <- 3
             }
         }
-        require(MALDIquant)
-        require(XML)
-        require(corrplot)
-        require(weights)
-        require(stats)
-        require(parallel)
         # Rename the trim function
         trim_spectra <- get(x = "trim", pos = "package:MALDIquant")
         # Rename the trim function to avoid conflicts
@@ -8507,7 +8495,7 @@ spectral_typer <- function() {
     
     
     ### Program version (Specified by the program writer!!!!)
-    R_script_version <- "2017.06.14.0"
+    R_script_version <- "2017.06.14.2"
     ### Force update (in case something goes wrong after an update, when checking for updates and reading the variable force_update, the script can automatically download the latest working version, even if the rest of the script is corrupted, because it is the first thing that reads)
     force_update <- FALSE
     ### GitHub URL where the R file is
@@ -8524,7 +8512,12 @@ spectral_typer <- function() {
     
     
     ############## INSTALL AND LOAD THE REQUIRED PACKAGES
-    install_and_load_required_packages(c("tcltk", "ggplot2", "ggdendro", "MALDIquant", "MALDIquantForeign", "XML"), repository = "http://cran.mirror.garr.it/mirrors/CRAN/", update_packages = TRUE, print_messages = TRUE)
+    install_and_load_required_packages(c("tcltk", "ggplot2", "ggdendro", "MALDIquant", "MALDIquantForeign", "XML", "weights", "stats", "foreach", "parallel", "corrplot", "weights"), repository = "http://cran.mirror.garr.it/mirrors/CRAN/", update_packages = TRUE, print_messages = TRUE)
+    if (Sys.info()[1] == "Windows") {
+        install_and_load_required_packages("doParallel")
+    } else {
+        install_and_load_required_packages("doMC")
+    }
     
     
     
@@ -9668,12 +9661,16 @@ spectral_typer <- function() {
             signals_to_take <- as.integer(signals_to_take)
             # Run the functions for variability estimation
             if (length(grep(".RData", filepath_database, fixed = TRUE)) == 0 && !is.null(database_folder_list) && length(database_folder_list) > 0) {
+                try({
                 database_spectral_variability_list <- spectral_variability_estimation(spectra = spectra_database, folder_list = database_folder_list, peak_picking_SNR = SNR, peak_picking_algorithm = peak_picking_algorithm, spectra_format = spectra_format, peak_picking_mode = peak_picking_mode, signals_to_take = signals_to_take, tof_mode = tof_mode, peak_deisotoping = peak_deisotoping, allow_parallelization = allow_parallelization)
+                }, silent = TRUE)
             } else {
                 database_spectral_variability_list <- list()
             }
             if (!is.null(test_folder_list_with_treatment) && length(test_folder_list_with_treatment) > 0) {
+                try({
                 test_spectral_variability_list <- spectral_variability_estimation(spectra = spectra_test, folder_list = test_folder_list_with_treatment, peak_picking_SNR = SNR, peak_picking_algorithm = peak_picking_algorithm, spectra_format = spectra_format, peak_picking_mode = peak_picking_mode, signals_to_take = signals_to_take, tof_mode = tof_mode, peak_deisotoping = peak_deisotoping, allow_parallelization = allow_parallelization)
+                }, silent = TRUE)
             } else {
                 test_spectral_variability_list <- list()
             }
