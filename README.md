@@ -3,7 +3,7 @@
 ***
 
 ## Program version
-In order for this WIKI to be applicable, the version of the program must be equal to or higher than **2017.05.31.0**.
+In order for this WIKI to be applicable, the version of the program must be equal to or higher than **2017.06.15.0**.
 
 ***
 
@@ -144,7 +144,9 @@ Example of folder hierarchy:
 * DATABASE
     * Database entry sample folders/Treatment folders/Sample replicates/Spectrum coordinates/1/1SLin/Spectrum data
     * Class folders - Entry sample folders/Sample imzML,TXT,CSV,MSD files
+    * Sample imzML,TXT,CSV,MSD files
 
 * SAMPLES
     * Sample folders/Treatment folders/Spectra replicates/Spectrum coordinates/1/1SLin/Spectrum data
     * Sample folders/Treatment folders/Sample imzML,TXT,CSV,MSD files
+    * Sample imzML,TXT,CSV,MSD files
