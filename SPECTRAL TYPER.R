@@ -5,7 +5,7 @@ rm(list = ls())
 
 functions_mass_spectrometry <- function() {
     
-    ################## FUNCTIONS - MASS SPECTROMETRY 2017.06.14 ################
+    ################## FUNCTIONS - MASS SPECTROMETRY 2017.06.15 ################
     # Each function is assigned with <<- instead of <-, so when called by the huge functions_mass_spectrometry() function they go in the global environment, like as if the script was directly sourced from the file.
     
     
@@ -352,7 +352,7 @@ functions_mass_spectrometry <- function() {
     # This function adds two column to the peaklist matrix (rows: spectra/patients, columns: aligned peaks): Sample and Class, according to the file name.
     ### The name of the rows will be either the sample name or the class name (depending on the function parameter).
     # If the rows are named according to the sample name, an additional column for the class is added
-    matrix_add_class_and_sample <<- function(signal_matrix, peaks = list(), class_list = list(), spectra_format = "imzml", sample_output = TRUE, class_output = TRUE, row_labels = "Sample") {
+    matrix_add_class_and_sample <<- function(signal_matrix, peaks = list(), class_list = list(), spectra_format = "imzML", sample_output = TRUE, class_output = TRUE, row_labels = "Sample") {
         # Convert the input matrix/dataframe into a matrix
         if (!is.matrix(signal_matrix)) {
             signal_matrix <- as.matrix(signal_matrix)
@@ -370,25 +370,17 @@ functions_mass_spectrometry <- function() {
         # Add the file names recursively, scrolling the whole spectral dataset
         if (isMassPeaksList(peaks)) {
             for (i in 1:length(peaks)) {
-                if (spectra_format == "imzml" || spectra_format == "imzML") {
+                if (spectra_format == "imzML" || spectra_format == "txt" || spectra_format == "csv" || spectra_format == "msd") {
                     path_vector <- append(path_vector, peaks[[i]]@metaData$file[1])
-                } else if (spectra_format == "brukerflex" || spectra_format == "xmass") {
+                } else if (spectra_format == "fid") {
                     path_vector <- append(path_vector, peaks[[i]]@metaData$sampleName[1])
-                } else if (spectra_format == "txt" || spectra_format == "TXT" || spectra_format == "text") {
-                    path_vector <- append(path_vector, peaks[[i]]@metaData$file[1])
-                } else if (spectra_format == "csv" || spectra_format == "CSV") {
-                    path_vector <- append(path_vector, peaks[[i]]@metaData$file[1])
                 }
             }
         } else if (isMassPeaks(peaks)) {
-            if (spectra_format == "imzml" || spectra_format == "imzML") {
+            if (spectra_format == "imzML" || spectra_format == "txt" || spectra_format == "csv" || spectra_format == "msd") {
                 path_vector <- append(path_vector, peaks@metaData$file[1])
-            } else if (spectra_format == "brukerflex" || spectra_format == "xmass") {
+            } else if (spectra_format == "fid") {
                 path_vector <- append(path_vector, peaks@metaData$sampleName[1])
-            } else if (spectra_format == "txt" || spectra_format == "TXT" || spectra_format == "text") {
-                path_vector <- append(path_vector, peaks@metaData$file[1])
-            } else if (spectra_format == "csv" || spectra_format == "CSV") {
-                path_vector <- append(path_vector, peaks@metaData$file[1])
             }
         }
         ##### File vector
@@ -399,25 +391,17 @@ functions_mass_spectrometry <- function() {
         # Add the file names recursively, scrolling the whole spectral dataset
         if (isMassPeaksList(peaks)) {
             for (i in 1:length(peaks)) {
-                if (spectra_format == "imzml" || spectra_format == "imzML") {
+                if (spectra_format == "imzML" || spectra_format == "txt" || spectra_format == "csv" || spectra_format == "msd") {
                     file_vector <- append(file_vector, peaks[[i]]@metaData$file[1])
-                } else if (spectra_format == "brukerflex" || spectra_format == "xmass") {
+                } else if (spectra_format == "fid") {
                     file_vector <- append(file_vector, peaks[[i]]@metaData$sampleName[1])
-                } else if (spectra_format == "txt" || spectra_format == "TXT" || spectra_format == "text") {
-                    file_vector <- append(file_vector, peaks[[i]]@metaData$file[1])
-                } else if (spectra_format == "csv" || spectra_format == "CSV") {
-                    file_vector <- append(file_vector, peaks[[i]]@metaData$file[1])
                 }
             }
         } else if (isMassPeaks(peaks)) {
-            if (spectra_format == "imzml" || spectra_format == "imzML") {
+            if (spectra_format == "imzML" || spectra_format == "txt" || spectra_format == "csv" || spectra_format == "msd") {
                 file_vector <- append(file_vector, peaks@metaData$file[1])
-            } else if (spectra_format == "brukerflex" || spectra_format == "xmass") {
+            } else if (spectra_format == "fid") {
                 file_vector <- append(file_vector, peaks@metaData$sampleName[1])
-            } else if (spectra_format == "txt" || spectra_format == "TXT" || spectra_format == "text") {
-                file_vector <- append(file_vector, peaks@metaData$file[1])
-            } else if (spectra_format == "csv" || spectra_format == "CSV") {
-                file_vector <- append(file_vector, peaks@metaData$file[1])
             }
         }
         ################################## Only the sample
@@ -611,16 +595,16 @@ functions_mass_spectrometry <- function() {
     
     ###################################### ADD THE THY CLASS TO THE MATRIX (THYROID)
     # This function adds the THY column to the peaklist matrix, by reading the THY value from the sample name (imzML)
-    matrix_add_thy <<- function(signal_matrix, peaks, spectra_format = "imzml") {
+    matrix_add_thy <<- function(signal_matrix, peaks, spectra_format = "imzML") {
         number_of_spectra <- length(peaks)
         # Create the empty vector
         file_vector <- character()
         # Add the file names recursively, scrolling the whole spectral dataset
         for (i in 1:length(peaks)) {
-            if (spectra_format == "imzml" || spectra_format == "imzML") {
+            if (spectra_format == "imzML" || spectra_format == "txt" || spectra_format == "csv" || spectra_format == "msd") {
                 file_vector <- append(file_vector, peaks[[i]]@metaData$file[1])
             }
-            if (spectra_format == "brukerflex" || spectra_format == "xmass") {
+            if (spectra_format == "fid") {
                 file_vector <- append(file_vector, peaks[[i]]@metaData$sampleName)
             }
         }
@@ -935,20 +919,9 @@ functions_mass_spectrometry <- function() {
     
     ########################################################### SPECTRA FILES READER
     # This function reads all the files from a folder and returns only the spectral files, discarding all the other files.
-    read_spectra_files <<- function(folder, spectra_format = "imzml", full_path = TRUE) {
-        if (spectra_format == "imzml" || spectra_format == "imzML") {
-            # Read all the imzML files
-            spectra_files <- list.files(folder, full.names = full_path, recursive = TRUE, pattern = ".imzML", all.files = TRUE)
-        } else if (spectra_format == "brukerflex" || spectra_format == "xmass") {
-            # Read all the FID files
-            spectra_files <- list.files(folder, full.names = full_path, recursive = TRUE, pattern = "fid", all.files = TRUE)
-        } else if (spectra_format == "txt" || spectra_format == "TXT" || spectra_format == "text") {
-            # Read all the TXT files
-            spectra_files <- list.files(folder, full.names = full_path, recursive = TRUE, pattern = ".txt", all.files = TRUE)
-        } else if (spectra_format == "csv" || spectra_format == "CSV") {
-            # Read all the CSV files
-            spectra_files <- list.files(folder, full.names = full_path, recursive = TRUE, pattern = ".csv", all.files = TRUE)
-        }
+    read_spectra_files <<- function(folder, spectra_format = "imzML", full_path = TRUE) {
+        # Read all the imzML files
+        spectra_files <- list.files(folder, full.names = full_path, recursive = TRUE, pattern = ifelse(spectra_format == "fid", spectra_format, paste0(".", spectra_format)), all.files = TRUE)
         return(spectra_files)
     }
     
@@ -1025,7 +998,7 @@ functions_mass_spectrometry <- function() {
     ######################################### PEAK STATISTICS (on processed Spectra)
     # This function computes the peak statistics onto a selected spectra dataset (or to the provided peaks), both when the spectra belong to no (or one) class and more classes.
     # It returns a NULL value if the peak statistics cannot be performed.
-    peak_statistics <<- function(spectra, peaks = NULL, SNR = 3, peak_picking_algorithm = "SuperSmoother", class_list = NULL, class_in_file_path = TRUE, tof_mode = "linear", spectra_format = "imzml", exclude_spectra_without_peak = FALSE, alignment_iterations = 5, peak_filtering_frequency_threshold_percent = 25, remove_outliers = TRUE, low_intensity_peak_removal_threshold_percent = 0, low_intensity_peak_removal_threshold_method = "element_wise") {
+    peak_statistics <<- function(spectra, peaks = NULL, SNR = 3, peak_picking_algorithm = "SuperSmoother", class_list = NULL, class_in_file_path = TRUE, tof_mode = "linear", spectra_format = "imzML", exclude_spectra_without_peak = FALSE, alignment_iterations = 5, peak_filtering_frequency_threshold_percent = 25, remove_outliers = TRUE, low_intensity_peak_removal_threshold_percent = 0, low_intensity_peak_removal_threshold_method = "element_wise") {
         ########## Load the required libraries
         require(MALDIquant)
         require(XML)
@@ -1693,14 +1666,14 @@ functions_mass_spectrometry <- function() {
     
     ################################################################# IMPORT SPECTRA
     # The function imports the spectral files from the filepath specified. The spectral type can be specified, along with the mass range to cut the spectra during the import phase. The function automatically transforms the backslash in the forward slash on Windows and replace the list names (and the sample name if needed) for a better identification of spectra.
-    import_spectra <<- function(filepath, spectra_format = "imzml", mass_range = NULL, allow_parallelization = FALSE, spectral_names = "name", replace_sample_name_field = TRUE, remove_empty_spectra = TRUE) {
+    import_spectra <<- function(filepath, spectra_format = "imzML", mass_range = NULL, allow_parallelization = FALSE, spectral_names = "name", replace_sample_name_field = TRUE, remove_empty_spectra = TRUE) {
         ### Load the packages
         require(MALDIquant)
         require(MALDIquantForeign)
         require(XML)
         require(parallel)
         ### imzML
-        if (spectra_format == "imzml" || spectra_format == "imzML") {
+        if (spectra_format == "imzML") {
             # Mass range specified
             if (!is.null(mass_range)) {
                 spectra <- importImzMl(filepath, massRange = mass_range, removeEmptySpectra = FALSE)
@@ -1708,7 +1681,7 @@ functions_mass_spectrometry <- function() {
                 # No mass range specified
                 spectra <- importImzMl(filepath, removeEmptySpectra = FALSE)
             }
-        } else if (spectra_format == "brukerflex" || spectra_format == "xmass" || spectra_format == "Xmass") {
+        } else if (spectra_format == "fid") {
             ### Xmass
             # Mass range specified
             if (!is.null(mass_range)) {
@@ -1717,7 +1690,7 @@ functions_mass_spectrometry <- function() {
                 # No mass range specified
                 spectra <- importBrukerFlex(filepath, removeEmptySpectra = FALSE)
             }
-        } else if (spectra_format == "txt" || spectra_format == "text" || spectra_format == "TXT") {
+        } else if (spectra_format == "txt") {
             ### TXT
             # Mass range specified
             if (!is.null(mass_range)) {
@@ -1726,7 +1699,7 @@ functions_mass_spectrometry <- function() {
                 # No mass range specified
                 spectra <- importTxt(filepath, removeEmptySpectra = FALSE)
             }
-        } else if (spectra_format == "csv" || spectra_format == "CSV") {
+        } else if (spectra_format == "csv") {
             ### CSV
             # Mass range specified
             if (!is.null(mass_range)) {
@@ -1735,8 +1708,8 @@ functions_mass_spectrometry <- function() {
                 # No mass range specified
                 spectra <- importCsv(filepath, removeEmptySpectra = FALSE)
             }
-        } else if (spectra_format == "msd" || spectra_format == "MSD" || spectra_format == "mMass") {
-            ### TXT
+        } else if (spectra_format == "msd") {
+            ### MSD
             # Mass range specified
             if (!is.null(mass_range)) {
                 spectra <- importMsd(filepath, massRange = mass_range, removeEmptySpectra = FALSE)
@@ -1774,60 +1747,26 @@ functions_mass_spectrometry <- function() {
     ################################################# SAMPLE NAME REPLACING
     # This function replaces the sample name field in the spectrum with the actual sample name (keeping only the last part of the file path and discarding the folder tree)
     # The input can be both spectra or peaks (MALDIquant)
-    replace_sample_name <<- function(spectra, spectra_format = "imzml", allow_parallelization = FALSE) {
+    replace_sample_name <<- function(spectra, spectra_format = "imzML", allow_parallelization = FALSE) {
         # Replace backslash first
         spectra <- replace_backslash(spectra, allow_parallelization = allow_parallelization)
         ##### Function for lapply
         name_replacing_subfunction <- function(spectra, spectra_format) {
-            ### imzML
-            if (spectra_format == "imzml" || spectra_format == "imzML") {
+            if (spectra_format == "imzML" || spectra_format == "txt" || spectra_format == "csv" || spectra_format == "msd") {
                 # Split the filepath at /
                 sample_name <- unlist(strsplit(spectra@metaData$file[1],"/"))
                 # The sample name is the last part of the path
                 sample_name <- sample_name[length(sample_name)]
                 # Detach the file extension
-                sample_name <- unlist(strsplit(sample_name, ".imzML"))
+                sample_name <- unlist(strsplit(sample_name, paste0(".", spectra_format)))
                 sample_name <- sample_name[1]
                 # Put the name back into the spectra
                 spectra@metaData$file <- sample_name
-            } else if (spectra_format == "brukerflex" || spectra_format == "xmass") {
+            } else if (spectra_format == "fid") {
                 ### Xmass
                 if (length(grep("/", spectra@metaData$file)) > 0) {
                     spectra@metaData$file <- spectra@metaData$sampleName[1]
                 }
-            } else if (spectra_format == "txt" || spectra_format == "TXT" || spectra_format == "text") {
-                ### TXT
-                # Split the filepath at /
-                sample_name <- unlist(strsplit(spectra@metaData$file[1],"/"))
-                # The sample name is the last part of the path
-                sample_name <- sample_name[length(sample_name)]
-                # Detach the file extension
-                sample_name <- unlist(strsplit(sample_name, ".txt"))
-                sample_name <- sample_name[1]
-                # Put the name back into the spectra
-                spectra@metaData$file <- sample_name
-            } else if (spectra_format == "csv" || spectra_format == "CSV") {
-                ### TXT
-                # Split the filepath at /
-                sample_name <- unlist(strsplit(spectra@metaData$file[1],"/"))
-                # The sample name is the last part of the path
-                sample_name <- sample_name[length(sample_name)]
-                # Detach the file extension
-                sample_name <- unlist(strsplit(sample_name, ".csv"))
-                sample_name <- sample_name[1]
-                # Put the name back into the spectra
-                spectra@metaData$file <- sample_name
-            } else if (spectra_format == "msd" || spectra_format == "MSD" || spectra_format == "mMass") {
-                ### MSD
-                # Split the filepath at /
-                sample_name <- unlist(strsplit(spectra@metaData$file[1],"/"))
-                # The sample name is the last part of the path
-                sample_name <- sample_name[length(sample_name)]
-                # Detach the file extension
-                sample_name <- unlist(strsplit(sample_name, ".msd"))
-                sample_name <- sample_name[1]
-                # Put the name back into the spectra
-                spectra@metaData$file <- sample_name
             }
             ### Return
             return(spectra)
@@ -1903,7 +1842,7 @@ functions_mass_spectrometry <- function() {
     
     #################################################### SPECTRA GROUPING (CLASSES)
     # The functions takes a list of spectra (MALDIquant) and generates a list of representative spectra, averaging spectra according to the class they belong to, generating one average spectrum per class.
-    group_spectra_class <<- function(spectra, class_list, grouping_method = "mean", spectra_format = "imzml", class_in_file_path = TRUE, class_in_file_name = FALSE, tof_mode = "linear", preprocessing_parameters = list(mass_range = NULL, transformation_algorithm = NULL, smoothing_algorithm = "SavitzkyGolay", smoothing_strength = "medium", baseline_subtraction_algorithm = "SNIP", baseline_subtraction_algorithm_parameter = 100, normalization_algorithm = "TIC", normalization_mass_range = NULL, preprocess_spectra_in_packages_of = 0, spectral_alignment_algorithm = "cubic", spectral_alignment_reference = "average spectrum"), allow_parallelization = FALSE) {
+    group_spectra_class <<- function(spectra, class_list, grouping_method = "mean", spectra_format = "imzML", class_in_file_path = TRUE, class_in_file_name = FALSE, tof_mode = "linear", preprocessing_parameters = list(mass_range = NULL, transformation_algorithm = NULL, smoothing_algorithm = "SavitzkyGolay", smoothing_strength = "medium", baseline_subtraction_algorithm = "SNIP", baseline_subtraction_algorithm_parameter = 100, normalization_algorithm = "TIC", normalization_mass_range = NULL, preprocess_spectra_in_packages_of = 0, spectral_alignment_algorithm = "cubic", spectral_alignment_reference = "average spectrum"), allow_parallelization = FALSE) {
         require(MALDIquant)
         require(XML)
         ##### Spectral preprocessing
@@ -1946,7 +1885,7 @@ functions_mass_spectrometry <- function() {
     ################################################# SAMPLE NAME REPLACING
     # This function puts the sample name or a unique ID number (corresponding to the list entry number) as the name of the list element, so that names(spectra) is not NULL and a better identification of the spectra is obtained (through a unique name). Moreover, the function can replace the sample name field in the spectrum with the actual sample name (keeping only the last part of the file path and discarding the folder tree) (with the replace_sample_name function).
     # The input can be both spectra or peaks (MALDIquant)
-    replace_sample_name_list <<- function(spectra, spectra_format = "imzml", type = "number", replace_sample_name_field = TRUE, allow_parallelization = FALSE) {
+    replace_sample_name_list <<- function(spectra, spectra_format = "imzML", type = "number", replace_sample_name_field = TRUE, allow_parallelization = FALSE) {
         ## Replace backslash first
         spectra <- replace_backslash(spectra, allow_parallelization = allow_parallelization)
         ##### Replace the list names only if NULL
@@ -2027,9 +1966,9 @@ functions_mass_spectrometry <- function() {
     ########################################################## CLASS NAME REPLACING
     # This function replaces the sample name field in the spectrum with the class the spectrum belongs to. If the filename contains the class, it replaces the filename with the class name, otherwise a class list symmetrical to the spectra must be provided.
     # The input can be both spectra or peaks (MALDIquant)
-    replace_class_name <<- function(spectra, class_list = NULL, class_in_file_path = TRUE, class_in_file_name = FALSE, spectra_format = "imzml") {
+    replace_class_name <<- function(spectra, class_list = NULL, class_in_file_path = TRUE, class_in_file_name = FALSE, spectra_format = "imzML") {
         # If a class list is provided...
-        if (!is.null(class_list)) {
+        if (!is.null(class_list) || length(class_list) > 0) {
             # If the class name is in the file path
             if (class_in_file_path == TRUE && class_in_file_name == FALSE) {
                 # Scroll the class list...
@@ -2081,11 +2020,11 @@ functions_mass_spectrometry <- function() {
                     spectra@metaData$file <- class_list
                 }
             }
-        } else if (is.null(class_list)) {
+        } else if (is.null(class_list) || length(class_list) == 0) {
             # If a class list is not provided... It's guessed from the filepath (the class is the folder in which the files are into)
             if (class_in_file_path == TRUE) {
                 ##### imzML
-                if (spectra_format == "imzml" || spectra_format == "imzML") {
+                if (spectra_format == "imzML" || spectra_format == "txt" || spectra_format == "csv" || spectra_format == "msd") {
                     # Scroll the spectra...
                     if (isMassSpectrumList(spectra) || isMassPeaksList(spectra)) {
                         for (i in 1:length(spectra)) {
@@ -2104,7 +2043,7 @@ functions_mass_spectrometry <- function() {
                         # Put the name back into the spectra
                         spectra@metaData$file <- class_name
                     }
-                } else if (spectra_format == "brukerflex" || spectra_format == "xmass") {
+                } else if (spectra_format == "fid") {
                     ##### Xmass
                     if (isMassSpectrumList(spectra) || isMassPeaksList(spectra)) {
                         # Scroll the spectra...
@@ -2430,6 +2369,9 @@ functions_mass_spectrometry <- function() {
                     tolerance_ppm <- 200
                 }
                 ##### Perform the alignment: Automatic computation of the reference peaklist
+                if (is.null(spectral_alignment_reference)) {
+                    spectral_alignment_reference <- "average spectrum"
+                }
                 if (!is.null(spectral_alignment_reference) && spectral_alignment_reference == "auto") {
                     aligned_spectra <- alignSpectra(spectra, noiseMethod = "MAD", halfWindowSize = half_window_alignment, SNR = 2, tolerance = (tolerance_ppm/10^6), warpingMethod = spectral_alignment_algorithm)
                 } else if (!is.null(spectral_alignment_reference) && spectral_alignment_reference == "average spectrum") {
@@ -2471,8 +2413,20 @@ functions_mass_spectrometry <- function() {
                     # Align the spectra
                     aligned_spectra <- alignSpectra(spectra, noiseMethod = "MAD", halfWindowSize = half_window_alignment, SNR = 2, tolerance = (tolerance_ppm/10^6), warpingMethod = spectral_alignment_algorithm, reference = skyline_spectrum_peaks)
                 }
+                ### Check if NA intensities/mz/snr are generated: if yes, go back to the original spectra
+                NA_values <- FALSE
+                for (s in 1:length(aligned_spectra)) {
+                    if (is.na(all(spectra[[s]]@mass)) || is.na(all(spectra[[s]]@intensity)) || is.na(all(spectra[[s]]@snr))) {
+                        NA_values <- TRUE
+                        break
+                    }
+                }
                 ### Return the aligned spectra
-                return(aligned_spectra)
+                if (NA_values == TRUE) {
+                    return(spectra)
+                } else {
+                    return(aligned_spectra)
+                }
             } else {
                 ### Return the original spectra if there is only one spectrum
                 return(spectra)
@@ -2685,7 +2639,7 @@ functions_mass_spectrometry <- function() {
             # List the spectra files (the path is from the folder, not the full path, so that the first folder is basically the sample name)
             spectra_files <- read_spectra_files(folder, spectra_format = spectra_format, full_path = FALSE)
             ## Xmass
-            if (spectra_format == "brukerflex" || spectra_format == "xmass" || spectra_format == "Xmass") {
+            if (spectra_format == "fid") {
                 # Split the path into individual folders (list, each element is a vector with the path splitted for that spectrum)
                 spectra_files_splitted <- list()
                 # Split the paths into folders
@@ -2718,7 +2672,7 @@ functions_mass_spectrometry <- function() {
                         }
                     }
                 }
-            } else if (spectra_format == "imzML" || spectra_format == "imzml") {
+            } else if (spectra_format == "imzML" || spectra_format == "txt" || spectra_format == "csv" || spectra_format == "msd") {
                 unique_sample_name <- character()
                 for (f in 1:length(spectra)) {
                     unique_sample_name <- append(unique_sample_name, spectra[[f]]@metaData$file[1])
@@ -4053,7 +4007,7 @@ functions_mass_spectrometry <- function() {
         ########## List the imzML files in the selected folder (if the path provided is a folder): check if its is folder, imzML file or spectra list
         ## Multiple imzML file path provided (folder)
         if (!is.list(spectra_path) && length(grep(".imzML", spectra_path, fixed = TRUE)) == 0) {
-            filepath_test_imzml <- read_spectra_files(spectra_path, spectra_format = "imzml", full_path = TRUE)
+            filepath_test_imzml <- read_spectra_files(spectra_path, spectra_format = "imzML", full_path = TRUE)
         } else if (!is.list(spectra_path) && length(grep(".imzML", spectra_path, fixed = TRUE)) > 0) {
             ## Single imzML filepath
             filepath_test_imzml <- spectra_path
@@ -4087,7 +4041,7 @@ functions_mass_spectrometry <- function() {
             ### Import the spectra
             if (!isMassSpectrumList(spectra_path) || !isMassSpectrum(spectra_path)) {
                 # Import the spectra (one imzML at a time)
-                sample_spectra <- import_spectra(filepath = filepath_test_imzml[p], spectra_format = "imzml", mass_range = mass_range, allow_parallelization = allow_parallelization, spectral_names = "name", replace_sample_name_field = TRUE, remove_empty_spectra = TRUE)
+                sample_spectra <- import_spectra(filepath = filepath_test_imzml[p], spectra_format = "imzML", mass_range = mass_range, allow_parallelization = allow_parallelization, spectral_names = "name", replace_sample_name_field = TRUE, remove_empty_spectra = TRUE)
             }
             ### Retrieve the sample name
             sample_name <- sample_spectra[[1]]@metaData$file[1]
@@ -5773,7 +5727,7 @@ functions_mass_spectrometry <- function() {
     #################### SPECTRAL TYPER SCORE ACCORDING TO THE HIERARCHICAL DISTANCE
     # This function computes the Spectral Typer score by comparing the test spectra with the library spectra, determining the similarity (through the euclidean distance) and assigning a category according to the distance.
     # Each sample gets compared with all the entries in the database, simultaneously.
-    spectral_typer_score_hierarchical_distance <<- function(spectra_database, spectra_test, peaks_database, peaks_test, class_list_library = NULL, peaks_filtering_percentage_threshold = 5, low_intensity_percentage_threshold = 0, low_intensity_threshold_method = "element-wise", tof_mode = "linear", spectra_path_output = TRUE, score_only = TRUE, spectra_format = "brukerflex", normalize_distances = TRUE, normalization_method = "sum", hierarchical_distance_method = "euclidean") {
+    spectral_typer_score_hierarchical_distance <<- function(spectra_database, spectra_test, peaks_database, peaks_test, class_list_library = NULL, peaks_filtering_percentage_threshold = 5, low_intensity_percentage_threshold = 0, low_intensity_threshold_method = "element-wise", tof_mode = "linear", spectra_path_output = TRUE, score_only = TRUE, spectra_format = "xmass", normalize_distances = TRUE, normalization_method = "sum", hierarchical_distance_method = "euclidean") {
         # Load the required libraries
         require(MALDIquant)
         require(XML)
@@ -5923,7 +5877,7 @@ functions_mass_spectrometry <- function() {
     # The function calculates the score for the Spectral Typer program, by comparing the test peaklist with the database peaklist, in terms of peak matching and intensity symmetry via the correlation matrix.
     # Each sample gets compared with each entry in the database, separately.
     # Parallel implemented.
-    spectral_typer_score_correlation_matrix <<- function(spectra_database, spectra_test, peaks_database, peaks_test, filepath_database, filepath_test, class_list_library = NULL, peaks_filtering_percentage_threshold = 5, low_intensity_percentage_threshold = 0, low_intensity_threshold_method = "element-wise", tof_mode = "linear", correlation_method = "spearman", intensity_correction_coefficient = 1, spectra_format = "brukerflex", spectra_path_output = TRUE, score_only = FALSE, allow_parallelization = FALSE, score_threshold_values = c(1.7, 2)) {
+    spectral_typer_score_correlation_matrix <<- function(spectra_database, spectra_test, peaks_database, peaks_test, filepath_database, filepath_test, class_list_library = NULL, peaks_filtering_percentage_threshold = 5, low_intensity_percentage_threshold = 0, low_intensity_threshold_method = "element-wise", tof_mode = "linear", correlation_method = "spearman", intensity_correction_coefficient = 1, spectra_format = "xmass", spectra_path_output = TRUE, score_only = FALSE, allow_parallelization = FALSE, score_threshold_values = c(1.7, 2)) {
         require(MALDIquant)
         require(XML)
         require(corrplot)
@@ -6315,7 +6269,7 @@ functions_mass_spectrometry <- function() {
     # The function calculates the score for the Spectral Typer program, by comparing the test peaklist with the database peaklist, in terms of peak matching and intensity comparison. The similarity comparison can be weighed accounting for the variability (coefficient of variation) for each database entry and sample, provided by two lists (one for the database and one for the samples) returned from the spectral_variability_estimation function (each element of the list should be named with the same name as the relative entry, otherwise the order is taken for matching); if there are NA values, the adjustment valu is taken from the average CV, and finally (if it is still NA), from the fixed provided value.
     # Each sample gets compared with each entry in the database, separately.
     # Parallel implemented.
-    spectral_typer_score_signal_intensity <<- function(spectra_database, spectra_test, peaks_database, peaks_test, class_list_library = NULL, database_spectral_variability_list = list(), test_spectral_variability_list = list(), signal_intensity_evaluation = c("fixed percentage", "peak-wise adjusted percentage", "average coefficient of variation"), peaks_filtering_percentage_threshold = 5, low_intensity_percentage_threshold = 0, low_intensity_threshold_method = "element-wise", tof_mode = "linear", intensity_tolerance_percent_threshold = 50, spectra_format = "brukerflex", spectra_path_output = TRUE, score_only = TRUE, allow_parallelization = FALSE, score_threshold_values = c(1.7, 2)) {
+    spectral_typer_score_signal_intensity <<- function(spectra_database, spectra_test, peaks_database, peaks_test, class_list_library = NULL, database_spectral_variability_list = list(), test_spectral_variability_list = list(), signal_intensity_evaluation = c("fixed percentage", "peak-wise adjusted percentage", "average coefficient of variation"), peaks_filtering_percentage_threshold = 5, low_intensity_percentage_threshold = 0, low_intensity_threshold_method = "element-wise", tof_mode = "linear", intensity_tolerance_percent_threshold = 50, spectra_format = "xmass", spectra_path_output = TRUE, score_only = TRUE, allow_parallelization = FALSE, score_threshold_values = c(1.7, 2)) {
         ### Fix the score intensity threshold values
         if (!is.numeric(score_threshold_values) || (is.numeric(score_threshold_values) && length(score_threshold_values) != 2)) {
             score_threshold_values <- c(1.7, 2)
@@ -6767,7 +6721,7 @@ functions_mass_spectrometry <- function() {
     # The function calculates the score for the Spectral Typer program, by comparing the test peaklist with the database peaklist, in terms of peak matching and intensity symmetry via the similarity index computation.
     # Each sample gets compared with each entry in the database, separately.
     # Parallel implemented.
-    spectral_typer_score_similarity_index <<- function(spectra_database, spectra_test, peaks_database, peaks_test, filepath_database, filepath_test, class_list_library = NULL, peaks_filtering_percentage_threshold = 5, low_intensity_percentage_threshold = 0.1, low_intensity_threshold_method = "element-wise", tof_mode = "linear", spectra_format = "brukerflex", spectra_path_output = TRUE, score_only = FALSE, allow_parallelization = FALSE, score_threshold_values = c(1.7, 2)) {
+    spectral_typer_score_similarity_index <<- function(spectra_database, spectra_test, peaks_database, peaks_test, filepath_database, filepath_test, class_list_library = NULL, peaks_filtering_percentage_threshold = 5, low_intensity_percentage_threshold = 0.1, low_intensity_threshold_method = "element-wise", tof_mode = "linear", spectra_format = "xmass", spectra_path_output = TRUE, score_only = FALSE, allow_parallelization = FALSE, score_threshold_values = c(1.7, 2)) {
         ### Fix the score intensity threshold values
         if (!is.numeric(score_threshold_values) || (is.numeric(score_threshold_values) && length(score_threshold_values) != 2)) {
             score_threshold_values <- c(1.7, 2)
@@ -8146,7 +8100,7 @@ functions_mass_spectrometry <- function() {
     
     ####################### FROM GENETIC ALGORITHM ON GRAPH TO SPECTRA AND MS IMAGES
     # The function takes the result of the genetic algorithm optimization (the genetic model object) and the list of spectra used to generate the adjacency matrix for the function 'genetic_algorithm_graph', it extracts the final chromosome (generated after the optimization) and it mirrors it onto the list of spectra, so that the output is a list of spectra belonging to the clique and a list of spectra belonging to the independent set. In addition, a list of spectra for plotting purposes is returned.
-    from_GA_to_MS <<- function(final_chromosome_GA, spectra, spectra_format = "imzml") {
+    from_GA_to_MS <<- function(final_chromosome_GA, spectra, spectra_format = "imzML") {
         ##### Install and load the required packages
         require(MALDIquant)
         require(XML)
@@ -8224,7 +8178,7 @@ functions_mass_spectrometry <- function() {
     #################################################### GRAPH SEGMENTATION FUNCTION
     # The function returns (for the imzML MSI dataset provided as the variable spectra) the list of spectra in the clique, the list of spectra in the independent set and the MS images (with pixels related to spectra in the clique in red and pixels related to spectra in the independent set in green), the initial and the final graph.
     # It returns a NULL value if the segmentation is not possible due to incompatibilities between the features in the dataset and the ones provided by the model.
-    graph_MSI_segmentation <<- function(filepath_imzml, preprocessing_parameters = list(mass_range = c(800,3000), transformation_algorithm = NULL, smoothing_algorithm = NULL, smoothing_strength = "medium", baseline_subtraction_algorithm = "SNIP", baseline_subtraction_algorithm_parameter = 200, normalization_algorithm = "TIC", normalization_mass_range = NULL, process_spectra_in_packages_of = 0, spectral_alignment_algorithm = NULL), allow_parallelization = FALSE, peak_picking_algorithm = "SuperSmoother", deisotope_peaklist = FALSE, SNR = 5, tof_mode = "reflectron", peak_filtering_frequency_threshold_percent = 5, low_intensity_peak_removal_threshold_percent = 0, low_intensity_peak_removal_threshold_method = "element-wise", custom_feature_vector = NULL, correlation_method_for_adjacency_matrix = "pearson", correlation_threshold_for_adjacency_matrix = 0.90, pvalue_threshold_for_adjacency_matrix = 0.05, number_of_high_degree_vertices_for_subgraph = 0, vertices_not_in_induced_subgraph = c("independent", "reassigned"), max_GA_generations = 10, iterations_with_no_change = 5, plot_figures = TRUE, plot_graphs = TRUE, plot_legends = c("sample name", "legend", "plot name"), number_of_spectra_partitions = 1, partitioning_method = "space", seed = 12345, spectra_format = "imzml") {
+    graph_MSI_segmentation <<- function(filepath_imzml, preprocessing_parameters = list(mass_range = c(800,3000), transformation_algorithm = NULL, smoothing_algorithm = NULL, smoothing_strength = "medium", baseline_subtraction_algorithm = "SNIP", baseline_subtraction_algorithm_parameter = 200, normalization_algorithm = "TIC", normalization_mass_range = NULL, process_spectra_in_packages_of = 0, spectral_alignment_algorithm = NULL), allow_parallelization = FALSE, peak_picking_algorithm = "SuperSmoother", deisotope_peaklist = FALSE, SNR = 5, tof_mode = "reflectron", peak_filtering_frequency_threshold_percent = 5, low_intensity_peak_removal_threshold_percent = 0, low_intensity_peak_removal_threshold_method = "element-wise", custom_feature_vector = NULL, correlation_method_for_adjacency_matrix = "pearson", correlation_threshold_for_adjacency_matrix = 0.90, pvalue_threshold_for_adjacency_matrix = 0.05, number_of_high_degree_vertices_for_subgraph = 0, vertices_not_in_induced_subgraph = c("independent", "reassigned"), max_GA_generations = 10, iterations_with_no_change = 5, plot_figures = TRUE, plot_graphs = TRUE, plot_legends = c("sample name", "legend", "plot name"), number_of_spectra_partitions = 1, partitioning_method = "space", seed = 12345, spectra_format = "imzML") {
         # Install and load the required packages
         require(MALDIquantForeign)
         require(MALDIquant)
@@ -8456,6 +8410,9 @@ functions_mass_spectrometry <- function() {
 
 
 
+
+
+
 ##########################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################
 
 
@@ -8495,7 +8452,7 @@ spectral_typer <- function() {
     
     
     ### Program version (Specified by the program writer!!!!)
-    R_script_version <- "2017.06.14.2"
+    R_script_version <- "2017.06.15.0"
     ### Force update (in case something goes wrong after an update, when checking for updates and reading the variable force_update, the script can automatically download the latest working version, even if the rest of the script is corrupted, because it is the first thing that reads)
     force_update <- FALSE
     ### GitHub URL where the R file is
@@ -8535,7 +8492,7 @@ spectral_typer <- function() {
     peaks_filtering <- FALSE
     low_intensity_peak_removal_threshold_method <- "element-wise"
     tof_mode <- "linear"
-    spectra_format <- "brukerflex"
+    spectra_format <- "fid"
     score_only <- FALSE
     spectra_path_output <- TRUE
     peak_picking_mode <- "all"
@@ -8771,6 +8728,7 @@ spectral_typer <- function() {
             # Ask for the algorithm
             transform_data_algorithm_input <- select.list(c("Square root", "Natural logarithm", "Decimal logarithm", "Binary Logarithm", "None"), title = "Data transformation", multiple = FALSE, preselect = "None")
             # Raise the focus on the preproc window
+            tkraise(window)
             tkraise(preproc_window)
             # Default and fix
             if (transform_data_algorithm_input == "Square root") {
@@ -8801,6 +8759,7 @@ spectral_typer <- function() {
             # Ask for the algorithm
             smoothing_algorithm_input <- select.list(c("Savitzky-Golay","Moving Average", "None"), title = "Smoothing algorithm", multiple = FALSE, preselect = "SavitzkyGolay")
             # Raise the focus on the preproc window
+            tkraise(window)
             tkraise(preproc_window)
             # Default and fix
             if (smoothing_algorithm_input == "" || smoothing_algorithm_input == "Savitzky-Golay") {
@@ -8814,6 +8773,7 @@ spectral_typer <- function() {
             if (!is.null(smoothing_algorithm)) {
                 smoothing_strength <- select.list(c("medium", "strong", "stronger"), title = "Smoothing strength", multiple = FALSE, preselect = "medium")
                 # Raise the focus on the preproc window
+                tkraise(window)
                 tkraise(preproc_window)
                 if (smoothing_strength == "") {
                     smoothing_strength <- "medium"
@@ -8837,6 +8797,7 @@ spectral_typer <- function() {
             # Ask for the algorithm
             baseline_subtraction_algorithm <- select.list(c("SNIP", "TopHat", "ConvexHull", "median", "None"), title = "Baseline subtraction algorithm", multiple = FALSE, preselect = "SNIP")
             # Raise the focus on the preproc window
+            tkraise(window)
             tkraise(preproc_window)
             # Default
             if (baseline_subtraction_algorithm == "") {
@@ -8884,6 +8845,7 @@ spectral_typer <- function() {
             # Ask for the algorithm
             normalization_algorithm <- select.list(c("TIC", "RMS", "PQN", "median", "None"), title = "Normalization algorithm", multiple = FALSE, preselect = "TIC")
             # Raise the focus on the preproc window
+            tkraise(window)
             tkraise(preproc_window)
             if (normalization_algorithm == "") {
                 normalization_algorithm <- "TIC"
@@ -8926,6 +8888,7 @@ spectral_typer <- function() {
             # Ask for the algorithm
             spectral_alignment_algorithm <- select.list(c("cubic", "quadratic", "linear", "lowess", "None"), title = "Spectral alignment algorithm", multiple = FALSE, preselect = "cubic")
             # Raise the focus on the preproc window
+            tkraise(window)
             tkraise(preproc_window)
             # Default
             if (spectral_alignment_algorithm == "") {
@@ -8938,6 +8901,7 @@ spectral_typer <- function() {
             if (!is.null(spectral_alignment_algorithm)) {
                 spectral_alignment_reference <- select.list(c("auto","average spectrum", "skyline spectrum"), title = "Spectral alignment reference", multiple = FALSE, preselect = "average spectrum")
                 # Raise the focus on the preproc window
+                tkraise(window)
                 tkraise(preproc_window)
                 if (spectral_alignment_reference == "") {
                     spectral_alignment_reference <- "average spectrum"
@@ -8963,6 +8927,7 @@ spectral_typer <- function() {
             # Catch the value from the menu
             tof_mode <- select.list(c("Linear", "Reflector"), title = "TOF mode")
             # Raise the focus on the preproc window
+            tkraise(window)
             tkraise(preproc_window)
             # Default
             if (tof_mode == "" || tof_mode == "Linear") {
@@ -9147,7 +9112,7 @@ spectral_typer <- function() {
             spectra_input_type <- "Folder"
         }
         if (spectra_input_type == "Folder") {
-            filepath_database_select <- tkmessageBox(title = "Library", message = "Select the folder for the spectra for the database.\n\n\nThe database folder should be structured like this:\n\nDatabase entry sample folders/Treatment folders/Sample replicates/Spectrum coordinates/1/1SLin/Spectrum data\n\nor\n\nClass folders - Entry sample folders/Sample imzML,TXT,CSV,MSD files", icon = "info")
+            filepath_database_select <- tkmessageBox(title = "Library", message = "Select the folder for the spectra for the database.\n\n\nThe database folder should be structured like this:\n\nDatabase entry sample folders/Treatment folders/Sample replicates/Spectrum coordinates/1/1SLin/Spectrum data\n\nor\n\nClass folders - Entry sample folders/Sample imzML,TXT,CSV,MSD files\n\nor Sample imzML,TXT,CSV,MSD files", icon = "info")
             filepath_database <- tclvalue(tkchooseDirectory())
             if (!nchar(filepath_database)) {
                 tkmessageBox(message = "No folder selected")
@@ -9172,7 +9137,7 @@ spectral_typer <- function() {
     
     ##### Samples
     select_samples_function <-function() {
-        filepath_test_select <- tkmessageBox(title = "Samples", message = "Select the folder for the spectra to be tested.\n\n\nThe sample folder should be organized like this:\n\nSample folders/Treatment folders/Spectra replicates/Spectrum coordinates/1/1SLin/Spectrum data\n\nor\n\nSample folders/Treatment folders/Sample imzML,TXT,CSV,MSD files", icon = "info")
+        filepath_test_select <- tkmessageBox(title = "Samples", message = "Select the folder for the spectra to be tested.\n\n\nThe sample folder should be organized like this:\n\nSample folders/Treatment folders/Spectra replicates/Spectrum coordinates/1/1SLin/Spectrum data\n\nor\n\nSample folders/Treatment folders/Sample imzML,TXT,CSV,MSD files\n\norSample imzML,TXT,CSV,MSD files", icon = "info")
         filepath_test <- tclvalue(tkchooseDirectory())
         if (!nchar(filepath_test)) {
             tkmessageBox(message = "No folder selected")
@@ -9556,10 +9521,10 @@ spectral_typer <- function() {
         tkraise(window)
         # Default
         if (spectra_format == "" || spectra_format == "Xmass") {
-            spectra_format <- "brukerflex"
+            spectra_format <- "fid"
             spectra_format_value <- "Xmass"
         } else if (spectra_format == "imzML") {
-            spectra_format <- "imzml"
+            spectra_format <- "imzML"
             spectra_format_value <- "imzML"
         } else if (spectra_format == "TXT") {
             spectra_format <- "txt"
@@ -9610,7 +9575,12 @@ spectral_typer <- function() {
             } else {
                 spectra_database <- import_spectra(filepath_database, spectra_format = spectra_format, mass_range = mass_range, allow_parallelization = allow_parallelization, spectral_names = "name", replace_sample_name_field = FALSE, remove_empty_spectra = TRUE)
                 # Read the folder list (database class list)
-                database_folder_list <- dir(filepath_database, ignore.case = TRUE, full.names = FALSE, recursive = FALSE, include.dirs = TRUE)
+                database_folder_list <- list.dirs(path = filepath_database, full.names = FALSE, recursive = FALSE)
+                # List the files, with the extension removed
+                database_files <- list.files(path = filepath_database, pattern = ifelse(spectra_format == "fid", spectra_format, paste0(".", spectra_format)), all.files = FALSE, full.names = FALSE, recursive = TRUE, ignore.case = FALSE, include.dirs = FALSE)
+                for (f in 1:length(database_files)) {
+                    database_files[f] <- unlist(strsplit(database_files[f], paste0(".", spectra_format)))[1]
+                }
                 # Write the path inside the list
                 for (x in 1:length(spectra_database)) {
                     spectra_database[[x]]@metaData$path <- filepath_database
@@ -9620,9 +9590,14 @@ spectral_typer <- function() {
             setTkProgressBar(import_progress_bar, value = 0.30, title = NULL, label = "Importing sample spectra...")
             spectra_test <- import_spectra(filepath_test, spectra_format = spectra_format, mass_range = mass_range, allow_parallelization = allow_parallelization, spectral_names = "name", replace_sample_name_field = FALSE, remove_empty_spectra = TRUE)
             # Read the sample folders
-            test_folder_list <- dir(filepath_test, ignore.case = TRUE, full.names = FALSE, recursive = FALSE, include.dirs = TRUE)
+            test_folder_list <- list.dirs(path = filepath_test, full.names = FALSE, recursive = FALSE)
+            # List the files, with the extension removed
+            test_files <- list.files(path = filepath_test, pattern = ifelse(spectra_format == "fid", spectra_format, paste0(".", spectra_format)), all.files = FALSE, full.names = FALSE, recursive = TRUE, ignore.case = FALSE, include.dirs = FALSE)
+            for (f in 1:length(test_files)) {
+                test_files[f] <- unlist(strsplit(test_files[f], paste0(".", spectra_format)))[1]
+            }
             # Read the sample folders (with treatment subfolder)
-            test_folder_list_with_subfolders <- dir(filepath_test, ignore.case = TRUE, full.names = FALSE, recursive = TRUE, include.dirs = TRUE)
+            test_folder_list_with_subfolders <- list.dirs(path = filepath_test, full.names = FALSE, recursive = TRUE)
             test_folder_list_with_treatment <- character()
             for (t in 1:length(test_folder_list)) {
                 sample_folder_temp <- character()
@@ -9665,14 +9640,14 @@ spectral_typer <- function() {
                 database_spectral_variability_list <- spectral_variability_estimation(spectra = spectra_database, folder_list = database_folder_list, peak_picking_SNR = SNR, peak_picking_algorithm = peak_picking_algorithm, spectra_format = spectra_format, peak_picking_mode = peak_picking_mode, signals_to_take = signals_to_take, tof_mode = tof_mode, peak_deisotoping = peak_deisotoping, allow_parallelization = allow_parallelization)
                 }, silent = TRUE)
             } else {
-                database_spectral_variability_list <- list()
+                database_spectral_variability_list <- NULL
             }
             if (!is.null(test_folder_list_with_treatment) && length(test_folder_list_with_treatment) > 0) {
                 try({
                 test_spectral_variability_list <- spectral_variability_estimation(spectra = spectra_test, folder_list = test_folder_list_with_treatment, peak_picking_SNR = SNR, peak_picking_algorithm = peak_picking_algorithm, spectra_format = spectra_format, peak_picking_mode = peak_picking_mode, signals_to_take = signals_to_take, tof_mode = tof_mode, peak_deisotoping = peak_deisotoping, allow_parallelization = allow_parallelization)
                 }, silent = TRUE)
             } else {
-                test_spectral_variability_list <- list()
+                test_spectral_variability_list <- NULL
             }
             ### Average the replicates
             # Progress bar
@@ -9682,14 +9657,18 @@ spectral_typer <- function() {
                 if (length(grep(".RData", filepath_database, fixed = TRUE)) > 0) {
                     spectra_database <- spectra_database
                 } else {
-                    spectra_database <- average_replicates_by_folder(spectra = spectra_database, folder = filepath_database, spectra_format = spectra_format)
-                    # The preprocessing of the average will be done after group_spectra_class, otherwise there might be too much preprocessing
-                    #spectra_database <- preprocess_spectra(spectra_database, tof_mode = tof_mode, preprocessing_parameters = preprocessing_parameters, allow_parallelization = allow_parallelization)
+                    if (length(database_folder_list) > 0) {
+                        spectra_database <- average_replicates_by_folder(spectra = spectra_database, folder = filepath_database, spectra_format = spectra_format)
+                        # The preprocessing of the average will be done after group_spectra_class, otherwise there might be too much preprocessing
+                        #spectra_database <- preprocess_spectra(spectra_database, tof_mode = tof_mode, preprocessing_parameters = preprocessing_parameters, allow_parallelization = allow_parallelization)
+                    }
                 }
             }
             if (average_replicates_in_test == TRUE) {
-                spectra_test <- average_replicates_by_folder(spectra = spectra_test, folder = filepath_test, spectra_format = spectra_format)
-                spectra_test <- preprocess_spectra(spectra_test, tof_mode = tof_mode, preprocessing_parameters = preprocessing_parameters, allow_parallelization = allow_parallelization)
+                if (length(test_folder_list) > 0) {
+                    spectra_test <- average_replicates_by_folder(spectra = spectra_test, folder = filepath_test, spectra_format = spectra_format)
+                    spectra_test <- preprocess_spectra(spectra_test, tof_mode = tof_mode, preprocessing_parameters = preprocessing_parameters, allow_parallelization = allow_parallelization)
+                }
             }
             ### Spectra grouping (class for database)
             # Progress bar
@@ -9697,8 +9676,13 @@ spectral_typer <- function() {
             if (length(grep(".RData", filepath_database, fixed = TRUE)) > 0) {
                 spectra_database <- spectra_database
             } else {
-                spectra_database <- group_spectra_class(spectra_database, class_list = database_folder_list, spectra_format = spectra_format, grouping_method = "mean", class_in_file_path = TRUE, class_in_file_name = FALSE, tof_mode = tof_mode, preprocessing_parameters = NULL, allow_parallelization = allow_parallelization)
-                spectra_database <- preprocess_spectra(spectra_database, tof_mode = tof_mode, preprocessing_parameters = preprocessing_parameters, allow_parallelization = allow_parallelization)
+                if (length(database_folder_list) > 0) {
+                    spectra_database <- group_spectra_class(spectra_database, class_list = database_folder_list, spectra_format = spectra_format, grouping_method = "mean", class_in_file_path = TRUE, class_in_file_name = FALSE, tof_mode = tof_mode, preprocessing_parameters = NULL, allow_parallelization = allow_parallelization)
+                    spectra_database <- preprocess_spectra(spectra_database, tof_mode = tof_mode, preprocessing_parameters = preprocessing_parameters, allow_parallelization = allow_parallelization)
+                } else {
+                    # If there are only files, just replace the sample name field in the spectra (as if group_spectra_class had been run)
+                    spectra_database <- replace_sample_name(spectra_database, spectra_format = spectra_format, allow_parallelization = allow_parallelization)
+                }
             }
             # Number of samples
             if (isMassSpectrumList(spectra_test)) {
@@ -9712,33 +9696,13 @@ spectral_typer <- function() {
             } else if (isMassSpectrum(spectra_database)) {
                 database_size <- 1
             }
-            ##### Alignment of the imported spectra
-            if (!is.null(spectral_alignment_algorithm)) {
-                spectral_alignment_performed <- FALSE
-                try({
-                    spectra_database_names <- names(spectra_database)
-                    spectra_test_names <- names(spectra_test)
-                    spectra_all <- append(spectra_database, spectra_test)
-                    spectra_all <- align_spectra(spectra_all, spectral_alignment_algorithm = spectral_alignment_algorithm, spectral_alignment_reference = spectral_alignment_reference, tof_mode = tof_mode, deisotope_peaklist = FALSE)
-                    spectra_database <- spectra_all[1:database_size]
-                    spectra_test <- spectra_all[(database_size + 1):length(spectra_all)]
-                    names(spectra_database) <- spectra_database_names
-                    names(spectra_test) <- spectra_test_names
-                    spectral_alignment_performed <- TRUE
-                }, silent = TRUE)
-                ### Spectral alignment messagebox
-                if (spectral_alignment_performed == TRUE) {
-                    print("The spectral alignment has been succesfully performed!")
-                } else {
-                    print("The spectral alignment could not be performed!")
-                    #tkmessageBox(title = "Spectral alignment not possible", message = "The spectral alignment could not be performed!", icon = "warning")
-                }
-            }
             # Exit the function and put the variable into the R workspace
             spectra_database <<- spectra_database
             spectra_test <<- spectra_test
             database_folder_list <<- database_folder_list
+            database_files <<- database_files
             test_folder_list <<- test_folder_list
+            test_files <<- test_files
             test_folder_list_with_subfolders <<- test_folder_list_with_subfolders
             number_of_samples <<- number_of_samples
             database_spectral_variability_list <<- database_spectral_variability_list
@@ -10221,10 +10185,10 @@ spectral_typer <- function() {
             spectra_output_format <- select.list(c("MSD", "TXT"), preselect = "MSD", multiple = FALSE, title = "Select the spectra format")
             # Raise the focus on the preproc window
             tkraise(window)
-            # Raise the focus on the preproc window
-            tkraise(window)
-            if (spectra_output_format == "") {
-                spectra_output_format <- "MSD"
+            if (spectra_output_format == "" || spectra_output_format == "MSD") {
+                spectra_output_format <- "msd"
+            } else if (spectra_output_format == "TXT") {
+                spectra_output_format <- "txt"
             }
             # Progress bar
             spectra_dump_progress_bar <- tkProgressBar(title = "Dumping files...", label = "0 %", min = 0, max = 1, initial = 0, width = 300)
@@ -10264,21 +10228,23 @@ spectral_typer <- function() {
             ## Get the database names (from the spectra list)
             spectra_test_name_vector <- names(spectra_test)
             if (average_replicates_in_test == TRUE) {
-                ## Split the path into individual folders (list, each element is a vector with the path splitted for that spectrum)
-                spectra_test_name_vector_splitted <- list()
-                for (f in 1:length(spectra_test_name_vector)) {
-                    spectra_test_name_vector_splitted[f] <- strsplit(spectra_test_name_vector[f], "/")
-                }
-                ## Re-join the names using the underscore "_"
-                spectra_test_name_vector_final <- list()
-                for (f in 1:length(spectra_test_name_vector_splitted)) {
-                    spectra_test_name_vector_final[[f]] <- spectra_test_name_vector_splitted[[f]][1]
-                    for (i in 2:length(spectra_test_name_vector_splitted[[f]])) {
-                        spectra_test_name_vector_final[[f]] <- paste(spectra_test_name_vector_final[[f]], spectra_test_name_vector_splitted[[f]][i], sep = "_")
+                if (spectra_format == "fid") {
+                    ## Split the path into individual folders (list, each element is a vector with the path splitted for that spectrum)
+                    spectra_test_name_vector_splitted <- list()
+                    for (f in 1:length(spectra_test_name_vector)) {
+                        spectra_test_name_vector_splitted[f] <- strsplit(spectra_test_name_vector[f], "/")
                     }
+                    ## Re-join the names using the underscore "_"
+                    spectra_test_name_vector_final <- list()
+                    for (f in 1:length(spectra_test_name_vector_splitted)) {
+                        spectra_test_name_vector_final[[f]] <- spectra_test_name_vector_splitted[[f]][1]
+                        for (i in 2:length(spectra_test_name_vector_splitted[[f]])) {
+                            spectra_test_name_vector_final[[f]] <- paste(spectra_test_name_vector_final[[f]], spectra_test_name_vector_splitted[[f]][i], sep = "_")
+                        }
+                    }
+                    spectra_test_name_vector_final <- unlist(spectra_test_name_vector_final)
+                    spectra_test_name_vector <- spectra_test_name_vector_final
                 }
-                spectra_test_name_vector_final <- unlist(spectra_test_name_vector_final)
-                spectra_test_name_vector <- spectra_test_name_vector_final
             }
             ## If there are already unique names, leave the spectra_name_vector as it is... Otherwise, generate unique names...
             if (length(spectra_database_name_vector) == length(unique(spectra_database_name_vector))) {
@@ -10770,4 +10736,3 @@ functions_mass_spectrometry()
 
 ### Run the function
 spectral_typer()
-
