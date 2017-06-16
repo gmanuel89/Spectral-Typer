@@ -6213,7 +6213,7 @@ functions_mass_spectrometry <- function() {
                 list_names <- NULL
             }
             output_list <- list()
-            output_list <- foreach(i = 1:length(global_list), .packages = c("weights", "MALDIquant"), .export = c("peak_picking", "most_intense_signals", "align_and_filter_peaks")) %dopar% {
+            output_list <- foreach(i = 1:length(global_list), .packages = c("weights", "MALDIquant"), .export = c("peak_picking", "most_intense_signals", "align_and_filter_peaks", "align_spectra", "preprocess_spectra")) %dopar% {
                 output_list[[i]] <- comparison_sample_db_subfunction_correlation(global_list[[i]])
             }
             names(output_list) <- list_names
@@ -6691,7 +6691,7 @@ functions_mass_spectrometry <- function() {
                 list_names <- NULL
             }
             output_list <- list()
-            output_list <- foreach(i = 1:length(global_list), .packages = "MALDIquant", .export = c("peak_picking", "most_intense_signals", "align_and_filter_peaks")) %dopar% {
+            output_list <- foreach(i = 1:length(global_list), .packages = "MALDIquant", .export = c("peak_picking", "most_intense_signals", "align_and_filter_peaks", "align_spectra", "preprocess_spectra")) %dopar% {
                 output_list[[i]] <- comparison_sample_db_subfunction_intensity(global_list[[i]])
             }
             names(output_list) <- list_names
@@ -7017,7 +7017,7 @@ functions_mass_spectrometry <- function() {
                 list_names <- NULL
             }
             output_list <- list()
-            output_list <- foreach(i = 1:length(global_list), .packages = "MALDIquant", .export = c("peak_picking", "most_intense_signals", "align_and_filter_peaks")) %dopar% {
+            output_list <- foreach(i = 1:length(global_list), .packages = "MALDIquant", .export = c("peak_picking", "most_intense_signals", "align_and_filter_peaks", "align_spectra", "preprocess_spectra")) %dopar% {
                 output_list[[i]] <- comparison_sample_db_subfunction_similarity_index(global_list[[i]])
             }
             names(output_list) <- list_names
@@ -8491,6 +8491,8 @@ functions_mass_spectrometry <- function() {
 
 
 
+
+
 ##########################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################
 
 
@@ -8530,7 +8532,7 @@ spectral_typer <- function() {
     
     
     ### Program version (Specified by the program writer!!!!)
-    R_script_version <- "2017.06.16.0"
+    R_script_version <- "2017.06.16.2"
     ### Force update (in case something goes wrong after an update, when checking for updates and reading the variable force_update, the script can automatically download the latest working version, even if the rest of the script is corrupted, because it is the first thing that reads)
     force_update <- FALSE
     ### GitHub URL where the R file is
