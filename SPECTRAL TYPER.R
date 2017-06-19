@@ -5,7 +5,7 @@ rm(list = ls())
 
 functions_mass_spectrometry <- function() {
     
-    ################## FUNCTIONS - MASS SPECTROMETRY 2017.06.16 ################
+    ################## FUNCTIONS - MASS SPECTROMETRY 2017.06.19 ################
     # Each function is assigned with <<- instead of <-, so when called by the huge functions_mass_spectrometry() function they go in the global environment, like as if the script was directly sourced from the file.
     
     
@@ -5819,6 +5819,8 @@ functions_mass_spectrometry <- function() {
         # Restore the lists
         peaks_database <- peaks_all[1:database_size]
         peaks_test <- peaks_all[(database_size + 1):length(peaks_all)]
+        names(peaks_database) <- database_names
+        names(peaks_test) <- test_names
         #### Replace the sample name, both in the library and in the test set
         peaks_test <- replace_sample_name(peaks_test, spectra_format = spectra_format)
         peaks_database <- replace_class_name(peaks_database,  class_list = class_list_library, spectra_format = spectra_format)
@@ -5858,16 +5860,15 @@ functions_mass_spectrometry <- function() {
         #plot(hierarchical_clustering, main = "Hierarchical clustering analysis - Spectral Typer, xlab = "Samples", ylab = "Tree height")
         hca_dendrogram <- ggdendrogram(hierarchical_clustering, segments = TRUE, labels = TRUE, leaf_labels = TRUE, rotate = TRUE, theme_dendro = TRUE)#, main = "Hierarchical clustering analysis - Spectral Typer", xlab = "Samples", ylab = "Tree height")
         #hca_dendrogram <- recordPlot()
-        #
         distance_matrix <- as.matrix(distance_matrix)
         # The distance matrix displays the distance between the spectra
         colnames(distance_matrix) <- peaklist_matrix[,"Sample"]
         rownames(distance_matrix) <- peaklist_matrix[,"Sample"]
         # Remove the first rows (the spectra from the database) and Keep only the first columns (the spectra from the database)
         distance_matrix <- distance_matrix[(database_size + 1):nrow(distance_matrix), 1:database_size]
-        ### Normalise the euclidean distances
+        ### Normalize the euclidean distances (per sample)
         if (normalize_distances == TRUE) {
-            # TIC (SUM)
+            # Sample TIC (SUM of the distances of the sample from all the database entries)
             if (normalization_method == "sum") {
                 # Compute the sum of the rows
                 row_sums <- apply(distance_matrix, MARGIN = 1, FUN = sum)
@@ -5891,21 +5892,42 @@ functions_mass_spectrometry <- function() {
                 }
                 result_matrix <- apply(distance_matrix, MARGIN = c(1,2), FUN = function(x) scoring_function(x))
             } else if (normalization_method == "max") {
-                # SUM
+                # MAX (MAX of the distances of the sample from all the database entries)
                 # Divide each element of the matrix by the maximum of the row
                 for (r in 1:nrow(distance_matrix)) {
-                    distance_matrix [r,] <- distance_matrix[r,] / max(distance_matrix[r,])
+                    distance_matrix[r,] <- distance_matrix[r,] / max(distance_matrix[r,], na.rm = TRUE)
                 }
                 # Multiply everything by 100, to have more readable results (percentage of the max)
                 distance_matrix <- distance_matrix * 100
                 # The classification is made by comparing the single sample spectrum with the spectrum of the database class (the distance is displayed in the distance matrix): the closer the better
                 # Scroll the rows, assign the class based upon the distance, create the output matrix for results (create a function to apply to each matrix row)
-                scoring_function <<- function (x) {
+                scoring_function <- function(x) {
                     if (x < 50) {
                         x <- paste0("YES\n(", round(as.numeric(x),3), ")")
                     } else if (x >= 50 && x < 75) {
                         x <- paste0("NI\n(", round(as.numeric(x),3), ")")
                     } else if (x >= 75) {
+                        x <- paste0("NO\n(", round(as.numeric(x),3), ")")
+                    }
+                    return(x)
+                }
+                result_matrix <- apply(distance_matrix, MARGIN = c(1,2), FUN = function(x) scoring_function(x))
+            } else if (normalization_method == "rms") {
+                # RMS (RMS of the distances of the sample from all the database entries)
+                # Divide each element of the matrix by the maximum of the row
+                for (r in 1:nrow(distance_matrix)) {
+                    distance_matrix[r,] <- distance_matrix[r,] / sqrt(sum(distance_matrix[r,], na.rm = TRUE)^2)
+                }
+                # Multiply everything by 10, to have more readable results
+                distance_matrix <- distance_matrix * 10
+                # The classification is made by comparing the single sample spectrum with the spectrum of the database class (the distance is displayed in the distance matrix): the closer the better
+                # Scroll the rows, assign the class based upon the distance, create the output matrix for results (create a function to apply to each matrix row)
+                scoring_function <- function(x) {
+                    if (x < 1) {
+                        x <- paste0("YES\n(", round(as.numeric(x),3), ")")
+                    } else if (x >= 1 && x < 1.2) {
+                        x <- paste0("NI\n(", round(as.numeric(x),3), ")")
+                    } else if (x >= 1.2) {
                         x <- paste0("NO\n(", round(as.numeric(x),3), ")")
                     }
                     return(x)
@@ -8493,6 +8515,8 @@ functions_mass_spectrometry <- function() {
 
 
 
+
+
 ##########################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################
 
 
@@ -8532,7 +8556,7 @@ spectral_typer <- function() {
     
     
     ### Program version (Specified by the program writer!!!!)
-    R_script_version <- "2017.06.16.2"
+    R_script_version <- "2017.06.19.0"
     ### Force update (in case something goes wrong after an update, when checking for updates and reading the variable force_update, the script can automatically download the latest working version, even if the rest of the script is corrupted, because it is the first thing that reads)
     force_update <- FALSE
     ### GitHub URL where the R file is
@@ -8542,7 +8566,7 @@ spectral_typer <- function() {
     ### Name of the file when downloaded
     script_file_name <- "SPECTRAL TYPER"
     # Change log
-    change_log <- "1. Auto adjust the intensity tolerance percentage value according to the spectral variability\n2. Variability estimation (mean signal CV)\n3. Peak enveloping\n4. More types of spectra files can be imported!\n4. Added the RMS normalization\n5. Parallel now in foreach!\n6. Allow to set tolerance in ppm"
+    change_log <- "1. Auto adjust the intensity tolerance percentage value according to the spectral variability\n2. Variability estimation (mean signal CV)\n3. Peak enveloping\n4. More types of spectra files can be imported!\n4. Added the RMS normalization\n5. Parallel now in foreach!\n6. Allow to set tolerance in ppm\n7. Conditional formatting in Excel"
     
     
     
@@ -9153,7 +9177,17 @@ spectral_typer <- function() {
         }
         # Install the packages
         if (file_type_export == "xls" || file_type_export == "xlsx") {
-            install_and_load_required_packages("XLConnect")
+            # Try to install the XLConnect (it will fail if Java is not installed)
+            Java_is_installed <- FALSE
+            try({
+                install_and_load_required_packages("XLConnect")
+                Java_is_installed <- TRUE
+            }, silent = TRUE)
+            # If it didn't install successfully, set to CSV
+            if (Java_is_installed == FALSE) {
+                tkmessageBox(title = "Java not installed", message = "Java is not installed, therefore the package XLConnect cannot be installed and loaded.\nThe output format is switched back to CSV", icon = "warning")
+                file_type_export <- "csv"
+            }
         }
         # Escape the function
         file_type_export <<- file_type_export
@@ -9166,8 +9200,6 @@ spectral_typer <- function() {
     set_file_name <- function() {
         # Retrieve the peaklist file name from the entry...
         filename <- tclvalue(file_name)
-        # Create a copy for the subfolder name (for the spectral files)
-        filename_subfolder <- filename
         # Add the date and time to the filename
         current_date <- unlist(strsplit(as.character(Sys.time()), " "))[1]
         current_date_split <- unlist(strsplit(current_date, "-"))
@@ -9183,6 +9215,8 @@ spectral_typer <- function() {
         }
         final_date_time <- paste(final_date, final_time, sep = "_")
         filename <- paste0(filename, " (", final_date_time, ")")
+        # Create a copy for the subfolder name (for the spectral files)
+        filename_subfolder <- filename
         # Add the extension if it is not present in the filename
         if (file_type_export == "csv") {
             if (length(grep(".csv", filename, fixed = TRUE)) == 1) {
@@ -9998,26 +10032,39 @@ spectral_typer <- function() {
             ############### CORRELATION
             # Progress bar
             setTkProgressBar(st_progress_bar, value = 0.20, title = NULL, label = "Computing correlation...")
+            all_is_completed_successfully <- logical()
             if ("correlation" %in% similarity_criteria) {
-                score_correlation_matrix <- spectral_typer_score_correlation_matrix(spectra_database, spectra_test, filepath_database, filepath_test, class_list_library = database_folder_list, peaks_filtering_percentage_threshold = peaks_filtering_threshold_percent, low_intensity_percentage_threshold = low_intensity_peak_removal_percentage_threshold, low_intensity_threshold_method = low_intensity_peak_removal_threshold_method, tof_mode = tof_mode, correlation_method = correlation_method, intensity_correction_coefficient = intensity_correction_coefficient, spectra_format = spectra_format, spectra_path_output = spectra_path_output, score_only = score_only, allow_parallelization = allow_parallelization, score_threshold_values = score_threshold_values, tolerance_ppm = tolerance_ppm, peak_picking_mode = peak_picking_mode, signals_to_take = signals_to_take, peak_picking_SNR = SNR, peak_picking_algorithm = peak_picking_algorithm, peak_deisotoping = peak_deisotoping, peak_enveloping = peak_enveloping, spectral_alignment_algorithm = spectral_alignment_algorithm, spectral_alignment_reference = spectral_alignment_reference)
+                try({
+                    score_correlation_matrix <- spectral_typer_score_correlation_matrix(spectra_database, spectra_test, filepath_database, filepath_test, class_list_library = database_folder_list, peaks_filtering_percentage_threshold = peaks_filtering_threshold_percent, low_intensity_percentage_threshold = low_intensity_peak_removal_percentage_threshold, low_intensity_threshold_method = low_intensity_peak_removal_threshold_method, tof_mode = tof_mode, correlation_method = correlation_method, intensity_correction_coefficient = intensity_correction_coefficient, spectra_format = spectra_format, spectra_path_output = spectra_path_output, score_only = score_only, allow_parallelization = allow_parallelization, score_threshold_values = score_threshold_values, tolerance_ppm = tolerance_ppm, peak_picking_mode = peak_picking_mode, signals_to_take = signals_to_take, peak_picking_SNR = SNR, peak_picking_algorithm = peak_picking_algorithm, peak_deisotoping = peak_deisotoping, peak_enveloping = peak_enveloping, spectral_alignment_algorithm = spectral_alignment_algorithm, spectral_alignment_reference = spectral_alignment_reference)
+                    all_is_completed_successfully <- append(all_is_completed_successfully, TRUE)
+                }, silent = TRUE)
             }
             ############### HIERARCHICAL CLUSTERING ANALYSIS
             # Progress bar
             setTkProgressBar(st_progress_bar, value = 0.40, title = NULL, label = "Computing distance...")
             if ("hca" %in% similarity_criteria) {
-                score_hca <- spectral_typer_score_hierarchical_distance(spectra_database, spectra_test, class_list_library = database_folder_list, peaks_filtering_percentage_threshold = peaks_filtering_threshold_percent, low_intensity_percentage_threshold = low_intensity_peak_removal_percentage_threshold, low_intensity_threshold_method = low_intensity_peak_removal_threshold_method, tof_mode = tof_mode, spectra_path_output = spectra_path_output, score_only = score_only, spectra_format = spectra_format, hierarchical_distance_method = hierarchical_distance_method, normalize_distances = TRUE, normalization_method = "sum", tolerance_ppm = tolerance_ppm, allow_parallelization = allow_parallelization, peak_picking_mode = peak_picking_mode, signals_to_take = signals_to_take, peak_picking_SNR = SNR, peak_picking_algorithm = peak_picking_algorithm, peak_deisotoping = peak_deisotoping, peak_enveloping = peak_enveloping, spectral_alignment_algorithm = spectral_alignment_algorithm, spectral_alignment_reference = spectral_alignment_reference)
+                try({
+                    score_hca <- spectral_typer_score_hierarchical_distance(spectra_database, spectra_test, class_list_library = database_folder_list, peaks_filtering_percentage_threshold = peaks_filtering_threshold_percent, low_intensity_percentage_threshold = low_intensity_peak_removal_percentage_threshold, low_intensity_threshold_method = low_intensity_peak_removal_threshold_method, tof_mode = tof_mode, spectra_path_output = spectra_path_output, score_only = score_only, spectra_format = spectra_format, hierarchical_distance_method = hierarchical_distance_method, normalize_distances = TRUE, normalization_method = "max", tolerance_ppm = tolerance_ppm, allow_parallelization = allow_parallelization, peak_picking_mode = peak_picking_mode, signals_to_take = signals_to_take, peak_picking_SNR = SNR, peak_picking_algorithm = peak_picking_algorithm, peak_deisotoping = peak_deisotoping, peak_enveloping = peak_enveloping, spectral_alignment_algorithm = spectral_alignment_algorithm, spectral_alignment_reference = spectral_alignment_reference)
+                    all_is_completed_successfully <- append(all_is_completed_successfully, TRUE)
+                }, silent = TRUE)
             }
             ############### SIMILARITY INDEX
             # Progress bar
             setTkProgressBar(st_progress_bar, value = 0.60, title = NULL, label = "Computing similarity index...")
             if ("similarity index" %in% similarity_criteria) {
-                score_si_matrix <- spectral_typer_score_similarity_index(spectra_database, spectra_test, filepath_database, filepath_test, class_list_library = database_folder_list, peaks_filtering_percentage_threshold = peaks_filtering_threshold_percent, low_intensity_percentage_threshold = low_intensity_peak_removal_percentage_threshold, low_intensity_threshold_method = low_intensity_peak_removal_threshold_method, tof_mode = tof_mode, spectra_format = spectra_format, spectra_path_output = spectra_path_output, score_only = score_only, allow_parallelization = allow_parallelization, score_threshold_values = score_threshold_values, tolerance_ppm = tolerance_ppm, peak_picking_mode = peak_picking_mode, signals_to_take = signals_to_take, peak_picking_SNR = SNR, peak_picking_algorithm = peak_picking_algorithm, peak_deisotoping = peak_deisotoping, peak_enveloping = peak_enveloping, spectral_alignment_algorithm = spectral_alignment_algorithm, spectral_alignment_reference = spectral_alignment_reference)
+                try({
+                    score_si_matrix <- spectral_typer_score_similarity_index(spectra_database, spectra_test, filepath_database, filepath_test, class_list_library = database_folder_list, peaks_filtering_percentage_threshold = peaks_filtering_threshold_percent, low_intensity_percentage_threshold = low_intensity_peak_removal_percentage_threshold, low_intensity_threshold_method = low_intensity_peak_removal_threshold_method, tof_mode = tof_mode, spectra_format = spectra_format, spectra_path_output = spectra_path_output, score_only = score_only, allow_parallelization = allow_parallelization, score_threshold_values = score_threshold_values, tolerance_ppm = tolerance_ppm, peak_picking_mode = peak_picking_mode, signals_to_take = signals_to_take, peak_picking_SNR = SNR, peak_picking_algorithm = peak_picking_algorithm, peak_deisotoping = peak_deisotoping, peak_enveloping = peak_enveloping, spectral_alignment_algorithm = spectral_alignment_algorithm, spectral_alignment_reference = spectral_alignment_reference)
+                    all_is_completed_successfully <- append(all_is_completed_successfully, TRUE)
+                }, silent = TRUE)
             }
             ############### INTENSITY
             # Progress bar
             setTkProgressBar(st_progress_bar, value = 0.80, title = NULL, label = "Comparing signal intensities...")
             if ("signal intensity" %in% similarity_criteria) {
-                score_intensity_matrix <- spectral_typer_score_signal_intensity(spectra_database, spectra_test, class_list_library = database_folder_list, database_spectral_variability_list = database_spectral_variability_list, test_spectral_variability_list = test_spectral_variability_list, signal_intensity_evaluation = signal_intensity_evaluation, peaks_filtering_percentage_threshold = peaks_filtering_threshold_percent, low_intensity_percentage_threshold = low_intensity_peak_removal_percentage_threshold, low_intensity_threshold_method = low_intensity_peak_removal_threshold_method, tof_mode = tof_mode, intensity_tolerance_percent_threshold = intensity_tolerance_percent, spectra_format = spectra_format, spectra_path_output = spectra_path_output, score_only = score_only, allow_parallelization = allow_parallelization, score_threshold_values = score_threshold_values, tolerance_ppm = tolerance_ppm, peak_picking_mode = peak_picking_mode, signals_to_take = signals_to_take, peak_picking_SNR = SNR, peak_picking_algorithm = peak_picking_algorithm, peak_deisotoping = peak_deisotoping, peak_enveloping = peak_enveloping, spectral_alignment_algorithm = spectral_alignment_algorithm, spectral_alignment_reference = spectral_alignment_reference)
+                try({
+                    score_intensity_matrix <- spectral_typer_score_signal_intensity(spectra_database, spectra_test, class_list_library = database_folder_list, database_spectral_variability_list = database_spectral_variability_list, test_spectral_variability_list = test_spectral_variability_list, signal_intensity_evaluation = signal_intensity_evaluation, peaks_filtering_percentage_threshold = peaks_filtering_threshold_percent, low_intensity_percentage_threshold = low_intensity_peak_removal_percentage_threshold, low_intensity_threshold_method = low_intensity_peak_removal_threshold_method, tof_mode = tof_mode, intensity_tolerance_percent_threshold = intensity_tolerance_percent, spectra_format = spectra_format, spectra_path_output = spectra_path_output, score_only = score_only, allow_parallelization = allow_parallelization, score_threshold_values = score_threshold_values, tolerance_ppm = tolerance_ppm, peak_picking_mode = peak_picking_mode, signals_to_take = signals_to_take, peak_picking_SNR = SNR, peak_picking_algorithm = peak_picking_algorithm, peak_deisotoping = peak_deisotoping, peak_enveloping = peak_enveloping, spectral_alignment_algorithm = spectral_alignment_algorithm, spectral_alignment_reference = spectral_alignment_reference)
+                    all_is_completed_successfully <- append(all_is_completed_successfully, TRUE)
+                }, silent = TRUE)
             }
             ### Parameters matrices
             # Progress bar
@@ -10025,75 +10072,46 @@ spectral_typer <- function() {
             # Parameters vector
             parameters_vector <- c(file_type_export, filepath_database, filepath_test, mass_range_value, tof_mode_value, tolerance_ppm_value, spectra_format_value, preprocess_spectra_in_packages_of_value, peak_picking_mode, peak_picking_algorithm_value, signals_to_take_value, intensity_tolerance_percent_value, similarity_criteria_value, intensity_correction_coefficient_value, SNR_value, peaks_filtering_threshold_percent_value, low_intensity_peak_removal_percentage_threshold_value, average_replicates_in_database_value, average_replicates_in_test_value, score_only_value, spectra_path_output_value, score_threshold_values_value)
             names(parameters_vector) <- c("File type", "Database folder", "Samples folder", "Mass range", "TOF mode", "Tolerance (in ppm)", "Spectra format", "Preprocess spectra in packages of", "Peak picking mode", "Peak picking algorithm", "Most intense signals taken", "Intensity tolerance percent", "Similarity criteria", "Intensity correction coefficient", "Signal-to-noise ratio", "Peaks filtering threshold percentage", "Low intensity peaks removal threshold percent", "Average replicates in the database", "Average replicates in the samples", "Score only", "Spectra path in the output", "Score threshold values")
+            parameters_matrix <- as.matrix(cbind(parameters_vector))
+            colnames(parameters_matrix) <- "Parameter"
             ### Fill in the matrices (the number of columns must be the same for rbind)
-            # Correlation
-            if (!is.null(score_correlation_matrix)) {
-                parameters_matrix_correlation <- matrix("", nrow = length(parameters_vector), ncol = ncol(score_correlation_matrix))
-                parameters_matrix_correlation[,1] <- cbind(parameters_vector)
-                rownames(parameters_matrix_correlation) <- names(parameters_vector)
-            }
-            # HCA
-            if (!is.null(score_hca)) {
-                score_hca_matrix <- score_hca$result_matrix
-                parameters_matrix_hca <- matrix("", nrow = length(parameters_vector), ncol = ncol(score_hca_matrix))
-                parameters_matrix_hca[,1] <- cbind(parameters_vector)
-                rownames(parameters_matrix_hca) <- names(parameters_vector)
-            }
-            # Similarity index
-            if (!is.null(score_si_matrix)) {
-                parameters_matrix_si <- matrix("", nrow = length(parameters_vector), ncol = ncol(score_si_matrix))
-                parameters_matrix_si[,1] <- cbind(parameters_vector)
-                rownames(parameters_matrix_si) <- names(parameters_vector)
-            }
-            # Intensity
-            if (!is.null(score_intensity_matrix)) {
-                parameters_matrix_intensity <- matrix("", nrow = length(parameters_vector), ncol = ncol(score_intensity_matrix))
-                parameters_matrix_intensity[,1] <- cbind(parameters_vector)
-                rownames(parameters_matrix_intensity) <- names(parameters_vector)
-            }
             # CV matrix
             if (!is.null(database_spectral_variability_list)) {
-                database_cv_matrix <- database_spectral_variability_list$cv_matrix
+                database_cv_matrix <<- database_spectral_variability_list$cv_matrix
             } else {
-                database_cv_matrix <- NULL
+                database_cv_matrix <<- NULL
             }
             if (!is.null(test_spectral_variability_list)) {
-                test_cv_matrix <- test_spectral_variability_list$cv_matrix
+                test_cv_matrix <<- test_spectral_variability_list$cv_matrix
             } else {
-                test_cv_matrix <- NULL
+                test_cv_matrix <<- NULL
             }
             #### Exit the function and put the variable into the R workspace
             # HCA
             if (!is.null(score_hca)) {
-                score_hca_matrix <- score_hca$result_matrix
-                score_hca_matrix_results <<- rbind(score_hca_matrix, parameters_matrix_hca)
+                score_hca_matrix <<- score_hca$result_matrix
             }
             # Similarity Index
             if (!is.null(score_si_matrix)) {
-                score_si_matrix_results <<- rbind(score_si_matrix, parameters_matrix_si)
+                score_si_matrix <<- score_si_matrix
             }
             # Intensity
             if (!is.null(score_intensity_matrix)) {
-                score_intensity_matrix_results <<- rbind(score_intensity_matrix, parameters_matrix_intensity)
+                score_intensity_matrix <<- score_intensity_matrix
             }
             # Correlation
             if (!is.null(score_correlation_matrix)) {
-                score_correlation_matrix_results <<- rbind(score_correlation_matrix, parameters_matrix_correlation)
-            }
-            # CV matrix
-            if (!is.null(database_cv_matrix)) {
-                database_cv_matrix <<- database_cv_matrix
-            }
-            if (!is.null(test_cv_matrix)) {
-                test_cv_matrix <<- test_cv_matrix
+                score_correlation_matrix <<- score_correlation_matrix
             }
             # Progress bar
             setTkProgressBar(st_progress_bar, value = 0.95, title = NULL, label = "Saving files...")
             ### Save the files (CSV)
             if (file_type_export == "csv") {
+                # Parameters matrix
+                write.csv(parameters_matrix, file = paste0(filename_subfolder, " - Parameters.", file_type_export))
                 # Intensity
                 if (!is.null(score_intensity_matrix)) {
-                    write.csv(score_intensity_matrix_results, file = paste0("INT_", filename))
+                    write.csv(score_intensity_matrix, file = paste0("INT_", filename))
                 }
                 # HCA
                 if (!is.null(score_hca)) {
@@ -10108,15 +10126,15 @@ spectral_typer <- function() {
                     #savePlot(filename="hca.png", type="png")
                     #dev.print(X11, file="hca.png", width = 1900, height = 1280)
                     #dev.off()
-                    write.csv(score_hca_matrix_results, file = paste0("HCA_", filename))
+                    write.csv(score_hca_matrix, file = paste0("HCA_", filename))
                 }
                 # Correlation
                 if (!is.null(score_correlation_matrix)) {
-                    write.csv(score_correlation_matrix_results, file = paste0("CORR_", filename))
+                    write.csv(score_correlation_matrix, file = paste0("CORR_", filename))
                 }
                 # Similarity index
                 if (!is.null(score_si_matrix)) {
-                    write.csv(score_si_matrix_results, file = paste0("SI_", filename))
+                    write.csv(score_si_matrix, file = paste0("SI_", filename))
                 }
                 # CV matrix
                 if (!is.null(database_cv_matrix)) {
@@ -10127,15 +10145,82 @@ spectral_typer <- function() {
                 }
             } else if (file_type_export == "xlsx" || file_type_export == "xls") {
                 ### Save the files (Excel)
+                # Parameters matrix
+                writeWorksheetToFile(file = paste0(filename_subfolder, " - Parameters.", file_type_export), data = parameters_matrix, sheet = "Parameters", clearSheets = TRUE, rownames = rownames(parameters_matrix))
                 # Intensity
                 if (!is.null(score_intensity_matrix)) {
-                    # Convert it to a data frame
-                    score_intensity_matrix_results <- as.data.frame(score_intensity_matrix_results)
                     # Generate unique row names
-                    unique_row_names <- make.names(rownames(score_intensity_matrix_results), unique = TRUE)
-                    rownames(score_intensity_matrix_results) <- unique_row_names
-                    # Export
-                    writeWorksheetToFile(file = paste0("INT_", filename), data = score_intensity_matrix_results, sheet = "Scores - Intensity", clearSheets = TRUE, rownames = rownames(score_intensity_matrix_results))
+                    if (length(rownames(score_intensity_matrix)) > length(unique(rownames(score_intensity_matrix)))) {
+                        rownames(score_intensity_matrix) <- make.names(rownames(score_intensity_matrix), unique = TRUE)
+                    }
+                    # Load the workbook (create if there is not already)
+                    wb <- loadWorkbook(filename = paste0("INT_", filename), create = TRUE)
+                    # Create the sheet
+                    createSheet(wb, name = "Scores - Intensity")
+                    # Write the data
+                    writeWorksheet(wb, data = score_intensity_matrix, sheet = "Scores - Intensity", header = TRUE, rownames = rownames(score_intensity_matrix))
+                    # Create the cell styles
+                    yes_cells_style <- createCellStyle(wb, name = "YES")
+                    ni_cells_style <- createCellStyle(wb, name = "NI")
+                    no_cells_style <- createCellStyle(wb, name = "NO")
+                    # Set the fill color
+                    #setFillBackgroundColor(yes_cells_style, color = XLC$COLOR.BRIGHT_GREEN)
+                    #setFillBackgroundColor(ni_cells_style, color = XLC$COLOR.LIGHT_YELLOW)
+                    #setFillBackgroundColor(no_cells_style, color = XLC$COLOR.RED)
+                    setFillForegroundColor(yes_cells_style, color = XLC$COLOR.BRIGHT_GREEN)
+                    setFillForegroundColor(ni_cells_style, color = XLC$COLOR.YELLOW)
+                    setFillForegroundColor(no_cells_style, color = XLC$COLOR.RED)
+                    # Set data format
+                    setDataFormat(yes_cells_style, format = XLC$DATA_TYPE.STRING)
+                    setDataFormat(ni_cells_style, format = XLC$DATA_TYPE.STRING)
+                    setDataFormat(no_cells_style, format = XLC$DATA_TYPE.STRING)
+                    # Set the style (fill in this case)
+                    setFillPattern(yes_cells_style, fill = XLC$FILL.SOLID_FOREGROUND)
+                    setFillPattern(ni_cells_style, fill = XLC$FILL.SOLID_FOREGROUND)
+                    setFillPattern(no_cells_style, fill = XLC$FILL.SOLID_FOREGROUND)
+                    # Index cells (rows and columns) (add + 1 to the rows due to the header, and + 1 to the columns due to the rownames)
+                    yes_cells_rows <- numeric()
+                    yes_cells_columns <- numeric()
+                    for (rw in 1:nrow(score_intensity_matrix)) {
+                        for (clm in 1:ncol(score_intensity_matrix)) {
+                            if (length(grep("YES", score_intensity_matrix[rw, clm], fixed = TRUE)) > 0) {
+                                yes_cells_rows <- append(yes_cells_rows, (rw + 1))
+                                yes_cells_columns <- append(yes_cells_columns, (clm + 1))
+                            }
+                        }
+                    }
+                    ni_cells_rows <- numeric()
+                    ni_cells_columns <- numeric()
+                    for (rw in 1:nrow(score_intensity_matrix)) {
+                        for (clm in 1:ncol(score_intensity_matrix)) {
+                            if (length(grep("NI", score_intensity_matrix[rw, clm], fixed = TRUE)) > 0) {
+                                ni_cells_rows <- append(ni_cells_rows, (rw + 1))
+                                ni_cells_columns <- append(ni_cells_columns, (clm + 1))
+                            }
+                        }
+                    }
+                    no_cells_rows <- numeric()
+                    no_cells_columns <- numeric()
+                    for (rw in 1:nrow(score_intensity_matrix)) {
+                        for (clm in 1:ncol(score_intensity_matrix)) {
+                            if (length(grep("NO", score_intensity_matrix[rw, clm], fixed = TRUE)) > 0) {
+                                no_cells_rows <- append(no_cells_rows, (rw + 1))
+                                no_cells_columns <- append(no_cells_columns, (clm+ 1))
+                            }
+                        }
+                    }
+                    # Set the style to the indexed cells
+                    if (length(yes_cells_rows) > 0 && length(yes_cells_columns) > 0) {
+                        setCellStyle(wb, sheet = "Scores - Intensity", row = yes_cells_rows, col = yes_cells_columns, cellstyle = yes_cells_style)
+                    }
+                    if (length(ni_cells_rows) > 0 && length(ni_cells_columns) > 0) {
+                        setCellStyle(wb, sheet = "Scores - Intensity", row = ni_cells_rows, col = ni_cells_columns, cellstyle = ni_cells_style)
+                    }
+                    if (length(no_cells_rows) > 0 && length(no_cells_columns) > 0) {
+                        setCellStyle(wb, sheet = "Scores - Intensity", row = no_cells_rows, col = no_cells_columns, cellstyle = no_cells_style)
+                    }
+                    # Save workbook
+                    saveWorkbook(wb)
                 }
                 # HCA
                 if (!is.null(score_hca)) {
@@ -10150,33 +10235,228 @@ spectral_typer <- function() {
                     #savePlot(filename="hca.png", type="png")
                     #dev.print(X11, file="hca.png", width = 1900, height = 1280)
                     #dev.off()
-                    # Convert it to a data frame
-                    score_hca_matrix_results <- as.data.frame(score_hca_matrix_results)
                     # Generate unique row names
-                    unique_row_names <- make.names(rownames(score_hca_matrix_results), unique = TRUE)
-                    rownames(score_hca_matrix_results) <- unique_row_names
-                    # Export
-                    writeWorksheetToFile(file = paste0("HCA_", filename), data = score_hca_matrix_results, sheet = "Scores - HCA", clearSheets = TRUE, rownames = rownames(score_hca_matrix_results))
+                    if (length(rownames(score_hca_matrix)) > length(unique(rownames(score_hca_matrix)))) {
+                        rownames(score_hca_matrix) <- make.names(rownames(score_hca_matrix), unique = TRUE)
+                    }
+                    # Load the workbook (create if there is not already)
+                    wb <- loadWorkbook(filename = paste0("HCA_", filename), create = TRUE)
+                    # Create the sheet
+                    createSheet(wb, name = "Scores - HCA")
+                    # Write the data
+                    writeWorksheet(wb, data = score_hca_matrix, sheet = "Scores - HCA", header = TRUE, rownames = rownames(score_hca_matrix))
+                    # Create the cell styles
+                    yes_cells_style <- createCellStyle(wb, name = "YES")
+                    ni_cells_style <- createCellStyle(wb, name = "NI")
+                    no_cells_style <- createCellStyle(wb, name = "NO")
+                    # Set the fill color
+                    #setFillBackgroundColor(yes_cells_style, color = XLC$COLOR.BRIGHT_GREEN)
+                    #setFillBackgroundColor(ni_cells_style, color = XLC$COLOR.LIGHT_YELLOW)
+                    #setFillBackgroundColor(no_cells_style, color = XLC$COLOR.RED)
+                    setFillForegroundColor(yes_cells_style, color = XLC$COLOR.BRIGHT_GREEN)
+                    setFillForegroundColor(ni_cells_style, color = XLC$COLOR.YELLOW)
+                    setFillForegroundColor(no_cells_style, color = XLC$COLOR.RED)
+                    # Set data format
+                    setDataFormat(yes_cells_style, format = XLC$DATA_TYPE.STRING)
+                    setDataFormat(ni_cells_style, format = XLC$DATA_TYPE.STRING)
+                    setDataFormat(no_cells_style, format = XLC$DATA_TYPE.STRING)
+                    # Set the style (fill in this case)
+                    setFillPattern(yes_cells_style, fill = XLC$FILL.SOLID_FOREGROUND)
+                    setFillPattern(ni_cells_style, fill = XLC$FILL.SOLID_FOREGROUND)
+                    setFillPattern(no_cells_style, fill = XLC$FILL.SOLID_FOREGROUND)
+                    # Index cells (rows and columns) (add + 1 to the rows due to the header, and + 1 to the columns due to the rownames)
+                    yes_cells_rows <- numeric()
+                    yes_cells_columns <- numeric()
+                    for (rw in 1:nrow(score_hca_matrix)) {
+                        for (clm in 1:ncol(score_hca_matrix)) {
+                            if (length(grep("YES", score_hca_matrix[rw, clm], fixed = TRUE)) > 0) {
+                                yes_cells_rows <- append(yes_cells_rows, (rw + 1))
+                                yes_cells_columns <- append(yes_cells_columns, (clm + 1))
+                            }
+                        }
+                    }
+                    ni_cells_rows <- numeric()
+                    ni_cells_columns <- numeric()
+                    for (rw in 1:nrow(score_hca_matrix)) {
+                        for (clm in 1:ncol(score_hca_matrix)) {
+                            if (length(grep("NI", score_hca_matrix[rw, clm], fixed = TRUE)) > 0) {
+                                ni_cells_rows <- append(ni_cells_rows, (rw + 1))
+                                ni_cells_columns <- append(ni_cells_columns, (clm + 1))
+                            }
+                        }
+                    }
+                    no_cells_rows <- numeric()
+                    no_cells_columns <- numeric()
+                    for (rw in 1:nrow(score_hca_matrix)) {
+                        for (clm in 1:ncol(score_hca_matrix)) {
+                            if (length(grep("NO", score_hca_matrix[rw, clm], fixed = TRUE)) > 0) {
+                                no_cells_rows <- append(no_cells_rows, (rw + 1))
+                                no_cells_columns <- append(no_cells_columns, (clm+ 1))
+                            }
+                        }
+                    }
+                    # Set the style to the indexed cells
+                    if (length(yes_cells_rows) > 0 && length(yes_cells_columns) > 0) {
+                        setCellStyle(wb, sheet = "Scores - HCA", row = yes_cells_rows, col = yes_cells_columns, cellstyle = yes_cells_style)
+                    }
+                    if (length(ni_cells_rows) > 0 && length(ni_cells_columns) > 0) {
+                        setCellStyle(wb, sheet = "Scores - HCA", row = ni_cells_rows, col = ni_cells_columns, cellstyle = ni_cells_style)
+                    }
+                    if (length(no_cells_rows) > 0 && length(no_cells_columns) > 0) {
+                        setCellStyle(wb, sheet = "Scores - HCA", row = no_cells_rows, col = no_cells_columns, cellstyle = no_cells_style)
+                    }
+                    # Save workbook
+                    saveWorkbook(wb)
                 }
                 # Correlation
                 if (!is.null(score_correlation_matrix)) {
-                    # Convert it to a data frame
-                    score_correlation_matrix_results <- as.data.frame(score_correlation_matrix_results)
                     # Generate unique row names
-                    unique_row_names <- make.names(rownames(score_correlation_matrix_results), unique = TRUE)
-                    rownames(score_correlation_matrix_results) <- unique_row_names
-                    # Export
-                    writeWorksheetToFile(file = paste0("CORR_", filename), data = score_correlation_matrix_results, sheet = "Scores - Correlation", clearSheets = TRUE, rownames = rownames(score_correlation_matrix_results))
+                    if (length(rownames(score_correlation_matrix)) > length(unique(rownames(score_correlation_matrix)))) {
+                        rownames(score_correlation_matrix) <- make.names(rownames(score_correlation_matrix), unique = TRUE)
+                    }
+                    # Load the workbook (create if there is not already)
+                    wb <- loadWorkbook(filename = paste0("CORR_", filename), create = TRUE)
+                    # Create the sheet
+                    createSheet(wb, name = "Scores - Correlation")
+                    # Write the data
+                    writeWorksheet(wb, data = score_correlation_matrix, sheet = "Scores - Correlation", header = TRUE, rownames = rownames(score_correlation_matrix))
+                    # Create the cell styles
+                    yes_cells_style <- createCellStyle(wb, name = "YES")
+                    ni_cells_style <- createCellStyle(wb, name = "NI")
+                    no_cells_style <- createCellStyle(wb, name = "NO")
+                    # Set the fill color
+                    #setFillBackgroundColor(yes_cells_style, color = XLC$COLOR.BRIGHT_GREEN)
+                    #setFillBackgroundColor(ni_cells_style, color = XLC$COLOR.LIGHT_YELLOW)
+                    #setFillBackgroundColor(no_cells_style, color = XLC$COLOR.RED)
+                    setFillForegroundColor(yes_cells_style, color = XLC$COLOR.BRIGHT_GREEN)
+                    setFillForegroundColor(ni_cells_style, color = XLC$COLOR.YELLOW)
+                    setFillForegroundColor(no_cells_style, color = XLC$COLOR.RED)
+                    # Set data format
+                    setDataFormat(yes_cells_style, format = XLC$DATA_TYPE.STRING)
+                    setDataFormat(ni_cells_style, format = XLC$DATA_TYPE.STRING)
+                    setDataFormat(no_cells_style, format = XLC$DATA_TYPE.STRING)
+                    # Set the style (fill in this case)
+                    setFillPattern(yes_cells_style, fill = XLC$FILL.SOLID_FOREGROUND)
+                    setFillPattern(ni_cells_style, fill = XLC$FILL.SOLID_FOREGROUND)
+                    setFillPattern(no_cells_style, fill = XLC$FILL.SOLID_FOREGROUND)
+                    # Index cells (rows and columns) (add + 1 to the rows due to the header, and + 1 to the columns due to the rownames)
+                    yes_cells_rows <- numeric()
+                    yes_cells_columns <- numeric()
+                    for (rw in 1:nrow(score_correlation_matrix)) {
+                        for (clm in 1:ncol(score_correlation_matrix)) {
+                            if (length(grep("YES", score_correlation_matrix[rw, clm], fixed = TRUE)) > 0) {
+                                yes_cells_rows <- append(yes_cells_rows, (rw + 1))
+                                yes_cells_columns <- append(yes_cells_columns, (clm + 1))
+                            }
+                        }
+                    }
+                    ni_cells_rows <- numeric()
+                    ni_cells_columns <- numeric()
+                    for (rw in 1:nrow(score_correlation_matrix)) {
+                        for (clm in 1:ncol(score_correlation_matrix)) {
+                            if (length(grep("NI", score_correlation_matrix[rw, clm], fixed = TRUE)) > 0) {
+                                ni_cells_rows <- append(ni_cells_rows, (rw + 1))
+                                ni_cells_columns <- append(ni_cells_columns, (clm + 1))
+                            }
+                        }
+                    }
+                    no_cells_rows <- numeric()
+                    no_cells_columns <- numeric()
+                    for (rw in 1:nrow(score_correlation_matrix)) {
+                        for (clm in 1:ncol(score_correlation_matrix)) {
+                            if (length(grep("NO", score_correlation_matrix[rw, clm], fixed = TRUE)) > 0) {
+                                no_cells_rows <- append(no_cells_rows, (rw + 1))
+                                no_cells_columns <- append(no_cells_columns, (clm+ 1))
+                            }
+                        }
+                    }
+                    # Set the style to the indexed cells
+                    if (length(yes_cells_rows) > 0 && length(yes_cells_columns) > 0) {
+                        setCellStyle(wb, sheet = "Scores - Correlation", row = yes_cells_rows, col = yes_cells_columns, cellstyle = yes_cells_style)
+                    }
+                    if (length(ni_cells_rows) > 0 && length(ni_cells_columns) > 0) {
+                        setCellStyle(wb, sheet = "Scores - Correlation", row = ni_cells_rows, col = ni_cells_columns, cellstyle = ni_cells_style)
+                    }
+                    if (length(no_cells_rows) > 0 && length(no_cells_columns) > 0) {
+                        setCellStyle(wb, sheet = "Scores - Correlation", row = no_cells_rows, col = no_cells_columns, cellstyle = no_cells_style)
+                    }
+                    # Save workbook
+                    saveWorkbook(wb)
                 }
                 # Similarity index
                 if (!is.null(score_si_matrix)) {
-                    # Convert it to a data frame
-                    score_si_matrix_results <- as.data.frame(score_si_matrix_results)
                     # Generate unique row names
-                    unique_row_names <- make.names(rownames(score_si_matrix_results), unique = TRUE)
-                    rownames(score_si_matrix_results) <- unique_row_names
-                    # Export
-                    writeWorksheetToFile(file = paste0("SI_", filename), data = score_si_matrix_results, sheet = "Scores - Similarity Index", clearSheets = TRUE, rownames = rownames(score_si_matrix_results))
+                    if (length(rownames(score_si_matrix)) > length(unique(rownames(score_si_matrix)))) {
+                        rownames(score_si_matrix) <- make.names(rownames(score_si_matrix), unique = TRUE)
+                    }
+                    # Load the workbook (create if there is not already)
+                    wb <- loadWorkbook(filename = paste0("SI_", filename), create = TRUE)
+                    # Create the sheet
+                    createSheet(wb, name = "Scores - SI")
+                    # Write the data
+                    writeWorksheet(wb, data = score_si_matrix, sheet = "Scores - SI", header = TRUE, rownames = rownames(score_si_matrix))
+                    # Create the cell styles
+                    yes_cells_style <- createCellStyle(wb, name = "YES")
+                    ni_cells_style <- createCellStyle(wb, name = "NI")
+                    no_cells_style <- createCellStyle(wb, name = "NO")
+                    # Set the fill color
+                    #setFillBackgroundColor(yes_cells_style, color = XLC$COLOR.BRIGHT_GREEN)
+                    #setFillBackgroundColor(ni_cells_style, color = XLC$COLOR.LIGHT_YELLOW)
+                    #setFillBackgroundColor(no_cells_style, color = XLC$COLOR.RED)
+                    setFillForegroundColor(yes_cells_style, color = XLC$COLOR.BRIGHT_GREEN)
+                    setFillForegroundColor(ni_cells_style, color = XLC$COLOR.YELLOW)
+                    setFillForegroundColor(no_cells_style, color = XLC$COLOR.RED)
+                    # Set data format
+                    setDataFormat(yes_cells_style, format = XLC$DATA_TYPE.STRING)
+                    setDataFormat(ni_cells_style, format = XLC$DATA_TYPE.STRING)
+                    setDataFormat(no_cells_style, format = XLC$DATA_TYPE.STRING)
+                    # Set the style (fill in this case)
+                    setFillPattern(yes_cells_style, fill = XLC$FILL.SOLID_FOREGROUND)
+                    setFillPattern(ni_cells_style, fill = XLC$FILL.SOLID_FOREGROUND)
+                    setFillPattern(no_cells_style, fill = XLC$FILL.SOLID_FOREGROUND)
+                    # Index cells (rows and columns) (add + 1 to the rows due to the header, and + 1 to the columns due to the rownames)
+                    yes_cells_rows <- numeric()
+                    yes_cells_columns <- numeric()
+                    for (rw in 1:nrow(score_si_matrix)) {
+                        for (clm in 1:ncol(score_si_matrix)) {
+                            if (length(grep("YES", score_si_matrix[rw, clm], fixed = TRUE)) > 0) {
+                                yes_cells_rows <- append(yes_cells_rows, (rw + 1))
+                                yes_cells_columns <- append(yes_cells_columns, (clm + 1))
+                            }
+                        }
+                    }
+                    ni_cells_rows <- numeric()
+                    ni_cells_columns <- numeric()
+                    for (rw in 1:nrow(score_si_matrix)) {
+                        for (clm in 1:ncol(score_si_matrix)) {
+                            if (length(grep("NI", score_si_matrix[rw, clm], fixed = TRUE)) > 0) {
+                                ni_cells_rows <- append(ni_cells_rows, (rw + 1))
+                                ni_cells_columns <- append(ni_cells_columns, (clm + 1))
+                            }
+                        }
+                    }
+                    no_cells_rows <- numeric()
+                    no_cells_columns <- numeric()
+                    for (rw in 1:nrow(score_si_matrix)) {
+                        for (clm in 1:ncol(score_si_matrix)) {
+                            if (length(grep("NO", score_si_matrix[rw, clm], fixed = TRUE)) > 0) {
+                                no_cells_rows <- append(no_cells_rows, (rw + 1))
+                                no_cells_columns <- append(no_cells_columns, (clm+ 1))
+                            }
+                        }
+                    }
+                    # Set the style to the indexed cells
+                    if (length(yes_cells_rows) > 0 && length(yes_cells_columns) > 0) {
+                        setCellStyle(wb, sheet = "Scores - SI", row = yes_cells_rows, col = yes_cells_columns, cellstyle = yes_cells_style)
+                    }
+                    if (length(ni_cells_rows) > 0 && length(ni_cells_columns) > 0) {
+                        setCellStyle(wb, sheet = "Scores - SI", row = ni_cells_rows, col = ni_cells_columns, cellstyle = ni_cells_style)
+                    }
+                    if (length(no_cells_rows) > 0 && length(no_cells_columns) > 0) {
+                        setCellStyle(wb, sheet = "Scores - SI", row = no_cells_rows, col = no_cells_columns, cellstyle = no_cells_style)
+                    }
+                    # Save workbook
+                    saveWorkbook(wb)
                 }
                 # CV matrix
                 if (!is.null(database_cv_matrix)) {
@@ -10201,11 +10481,16 @@ spectral_typer <- function() {
             # Progress bar
             setTkProgressBar(st_progress_bar, value = 1.00, title = NULL, label = "Done!")
             close(st_progress_bar)
-            ### Messagebox
-            tkmessageBox(title = "Done!", message = "The file(s) have been dumped\n\nLegend:\nF: Fit\nRF: Retrofit\nCorr: intensity correlation coefficient\nIntMtch: signal intensity matching\nsl: slope of the regression curve\nns: number of signals\nSI: Similarity Index\n\n\nFit = number of sample-database matching signals / number of signals in the sample\nRetrofit = number of database-sample matching signals / number of signals in the database entry", icon = "info")
+            if (all(all_is_completed_successfully, na.rm = TRUE) == TRUE) {
+                ### Messagebox
+                tkmessageBox(title = "Done!", message = "The file(s) have been dumped\n\nLegend:\nF: Fit\nRF: Retrofit\nCorr: intensity correlation coefficient\nIntMtch: signal intensity matching\nsl: slope of the regression curve\nns: number of signals\nSI: Similarity Index\n\n\nFit = number of sample-database matching signals / number of signals in the sample\nRetrofit = number of database-sample matching signals / number of signals in the database entry", icon = "info")
+            } else {
+                ### Messagebox
+                tkmessageBox(title = "Something is wrong", message = "Some elements are needed to perform this operation or something went wrong", icon = "warning")
+            }
         } else if (is.null(spectra_database) || is.null(spectra_test)) {
             ### Messagebox
-            tkmessageBox(title = "Something is wrong", message = "Some elements are needed to perform this operation: make sure that the spectra have been imported and the peak picking process has been performed", icon = "warning")
+            tkmessageBox(title = "Something is wrong", message = "Some elements are needed to perform this operation: make sure that the spectra have been imported correctly and no other errors happened", icon = "warning")
         }
         # Raise the focus on the preproc window
         tkraise(window)
