@@ -3,7 +3,7 @@
 ***
 
 ## Program version
-In order for this WIKI to be applicable, the version of the program must be equal to or higher than **2017.06.15.0**.
+In order for this WIKI to be applicable, the version of the program must be equal to or higher than **2017.06.19.0**.
 
 ***
 
@@ -87,7 +87,7 @@ The spectra files are placed in a folder with the same name as the peaklist file
         * *Minkowski*: The p-norm, the pth root of the sum of the pth powers of the differences of the components.
     * **_Signal intensity_**: checks if the intensity of the common signals (between the sample and the database entry) is similar by evaluating the difference in terms of percentage of intensity (tolerance %). Two signals are identified as matching when their difference in intensity is within a certain tolerance percentage value.
         * *Fixed percentage*: The tolerance value is fixed for every signal across the analysis (defined by the user).
-        * *Peak-wise adjusted percentage*: The tolerance value is adjusted for each peak in the comparison between sample and database entry, the adjustment corresponding to the coefficient of variation of that signal intensity computed over replicates of the database entry and the sample.
+        * *Peak-wise adjusted percentage*: The tolerance value is adjusted for each peak in the comparison between sample and database entry, the adjustment corresponding to the coefficient of variation of that signal intensity computed over replicates of the database entry and the sample. The signal is considered matched if the intervals constituted by the intensity value +/- the standard deviation both for the sample and the database entry overlap.
         * *Average coefficient of variation*: The tolerance value is adjusted for comparison between sample and database entry, the adjustment corresponding to the average coefficient of variation of signal intensities computed over replicates of the database entry.
     * **_Similarity index_**: computes the similarity index between the sample and the database entry by employing signal intensities.
 
@@ -120,15 +120,14 @@ The spectra files are placed in a folder with the same name as the peaklist file
         * *Median*: It divides the intensities of the spectrum by the median of all the intensity values of the spectrum itself. It has been proved to be the most robust normalization method.
     * **_Align spectra_**: selects if alignment of spectra should be performed, by generating a calibration curve ("cubic", "quadratic", "linear", "lowess") employing an automatically generated peaklist ("auto") as reference or by taking the peaks of the "average spectrum" or of the "skyline spectrum" as reference.
     * **_Preprocess spectra in packages of_**: defines the number of spectra to be taken at a time for preprocessing, when the computer resources are limited (taking all the spectra in RAM could cause the computer to freeze).
+    * **_Tolerance (in ppm)_**: defines the tolerance (in ppm, parts per million) for the spectral alignment, peak alignment and database-sample signal match. For linear TOF mode the tolerance should be set to 1000 ppm (0.1%, 4 Da at 4000 Da), while for reflectron TOF mode the tolerance should be set to 100 ppm (0.01%, 0.2 Da at 2000 Da).
     * **_Commit preprocessing_**: stores the preprocessing parameters to be applied for analysis.
 
 * **Import and preprocess spectra...**: imports the spectra and computes preprocessing (according to the specified parameters), averaging and alignment. It also estimates the spectral variability in terms of coefficient of variation of signal intensity across the replicates for each signal and average coefficient of variation of signal intensity, to be used for adjusting the tolerance parameters in th signal intensity comparison.
 
-* **Peak picking...**: performs the peak picking on the imported spectra.
-
 * **Run Spectral Typer**: runs the Spectral Typer software.
 
-* **Dump the database**: stores the spectra, the peaks and the signal variability estimation in an RData file, to be imported in the future for further use, skipping the import, the preprocessing and the peak picking on the database spectra.
+* **Dump the database**: stores the database spectra and the signal variability estimation in an RData file, to be imported in the future for further use, skipping the import and the preprocessing on the database spectra.
 
 * **Dump spectral files...**: generates a folder (named as the peaklist matrix file) in which all the spectral files are saved (MSD or TXT) and organized in two subfolders (one for the "Database spectra" and one for the "Sample spectra").
 
