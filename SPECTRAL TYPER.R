@@ -5,7 +5,7 @@ rm(list = ls())
 
 functions_mass_spectrometry <- function() {
     
-    ################## FUNCTIONS - MASS SPECTROMETRY 2017.06.19 ################
+    ################## FUNCTIONS - MASS SPECTROMETRY 2017.06.20 ################
     # Each function is assigned with <<- instead of <-, so when called by the huge functions_mass_spectrometry() function they go in the global environment, like as if the script was directly sourced from the file.
     
     
@@ -183,7 +183,7 @@ functions_mass_spectrometry <- function() {
     ########################################################### ENSEMBLE VOTE MATRIX
     # The function takes as input the result matrix of an ensemble classification: each row is an observation/spectrum (patient or pixel) and each column is the predicted class of that observation by one model.
     # The function returns a single column matrix with the ensemble classification results computed according to the input parameters (such as vote weights and method).
-    ensemble_vote_classification <<- function(classification_matrix, class_list = NULL, decision_method = "majority", vote_weights = "equal", classification_probabilities_list = NULL, performance_parameter_list = NULL, type_of_validation_for_performance_estimation = "cv") {
+    ensemble_vote_classification <<- function(classification_matrix, class_list = NULL, weighted_decision_method = "bayesian probabilities", classification_probabilities_list = NULL, performance_parameter_list = NULL, type_of_validation_for_performance_estimation = "cv") {
         ### Class list
         # Retrieve the class list according to the present classes (if not specified)
         if (is.null(class_list) || length(class_list) == 0) {
@@ -200,7 +200,7 @@ functions_mass_spectrometry <- function() {
         }
         ########## Vote
         ##### Majority vote: equal weights
-        if (decision_method == "majority" && vote_weights == "equal") {
+        if (weighted_decision_method == "unweighted majority") {
             # Function for matrix apply (x = row)
             majority_vote_function <- function(x, class_list) {
                 # Generate the vote vector (same length as the class list, with the number of the votes for each class, labeled)
@@ -222,7 +222,7 @@ functions_mass_spectrometry <- function() {
             # For each spectrum (matrix row), establish the final majority vote
             classification_ensemble_matrix <- cbind(apply(X = classification_matrix, MARGIN = 1, FUN = function(x) majority_vote_function(x, class_list)))
             colnames(classification_ensemble_matrix) <- "Ensemble classification"
-        } else if (decision_method == "majority" && vote_weights == "class assignment probabilities" && (!is.null(classification_probabilities_list) && is.list(classification_probabilities_list) && length(classification_probabilities_list) > 0)) {
+        } else if (weighted_decision_method == "class assignment probabilities" && (!is.null(classification_probabilities_list) && is.list(classification_probabilities_list) && length(classification_probabilities_list) > 0)) {
             ##### Majority vote: class assignment probabilities
             ## Generate a list in which each element (named according to the pixel/spectrum name) is a vector containing the probability for the assigned class: each element of the vector is a probability, which is associated to the name of the predicted class.
             pixel_probabilities_list <- list()
@@ -269,7 +269,7 @@ functions_mass_spectrometry <- function() {
                 }
             }
             colnames(classification_ensemble_matrix) <- "Ensemble classification"
-        } else if (decision_method == "majority" && vote_weights == "bayesian probabilities" && (!is.null(performance_parameter_list) && is.list(performance_parameter_list) && length(performance_parameter_list) > 0)) {
+        } else if (weighted_decision_method == "bayesian probabilities" && (!is.null(performance_parameter_list) && is.list(performance_parameter_list) && length(performance_parameter_list) > 0)) {
             ##### Majority vote: bayesian probabilities
             ## Initialize the final classification ensemble matrix
             classification_ensemble_matrix <- NULL
@@ -297,11 +297,11 @@ functions_mass_spectrometry <- function() {
                 for (m in 1:length(model_performance_parameter_list)) {
                     # For each class...
                     for (cl in 1:length(class_list)) {
-                        # If the predicted class (by the model) corresponds to the class in evaluation, the probability associated is the likelihood P(d=1|h=1), otherwise it is 1-likelihood P(d=0|h=1)
+                        # If the predicted class (by the model) corresponds to the class in evaluation, the probability associated is the sensitivity (true positive rate -> TPR) for that class P(d=1|h=1), otherwise it is 1-sensitivity (or false positive rate -> FPR) for that class P(d=0|h=1)
                         if (predicted_classes_models[m] == class_list[cl]) {
-                            bayesian_prob <- model_performance_parameter_list[[m]][[(predicted_classes_models[m])]][["sensitivity"]]
+                            bayesian_prob <- model_performance_parameter_list[[m]][[(predicted_classes_models[m])]][["TPR"]]
                         } else {
-                            bayesian_prob <- 1 - model_performance_parameter_list[[m]][[(predicted_classes_models[m])]][["sensitivity"]]
+                            bayesian_prob <- model_performance_parameter_list[[m]][[(predicted_classes_models[m])]][["FPR"]]
                         }
                         # Append the probability to the vector of probabilities 
                         if (is.null(class_probs_list[[(class_list[cl])]])) {
@@ -4009,7 +4009,7 @@ functions_mass_spectrometry <- function() {
     # The function outputs a list containing: a matrix with the classification (pixel-by-pixel and/or profile), MS images with the pixel-by-pixel classification, a matrix with the ensemble classification (pixel-by-pixel and/or profile), MS images with the pixel-by-pixel ensemble classification and the plot of the average spectrum with red bars to indicate the signals used for classification.
     # Parallel computation implemented.
     # It outputs NULL values if the classification cannot be performed due to incompatibilities between the model features and the spectral features.
-    spectral_classification <<- function(spectra_path, filepath_R = NULL, model_list, model_performance_parameter_list = NULL, classification_mode = c("pixel", "profile"), peak_picking_algorithm = "SuperSmoother", deisotope_peaklist = FALSE, preprocessing_parameters = list(mass_range = c(4000,15000), transformation_algorithm = NULL, smoothing_algorithm = "SavitzkyGolay", smoothing_strength = "medium", baseline_subtraction_algorithm = "SNIP", baseline_subtraction_algorithm_parameter = 100, normalization_algorithm = "TIC", normalization_mass_range = NULL, preprocess_spectra_in_packages_of = 0, spectral_alignment_algorithm = NULL), tof_mode = "linear", allow_parallelization = FALSE, decision_method_ensemble = "majority", vote_weights_ensemble = c("equal", "class assignment probabilities"), pixel_grouping = c("single", "moving window average", "graph", "hca"), moving_window_size = 5, number_of_hca_nodes = 10, number_of_spectra_partitions_graph = 1, partitioning_method_graph = "space", correlation_method_for_adjacency_matrix = "pearson", correlation_threshold_for_adjacency_matrix = 0.95, pvalue_threshold_for_adjacency_matrix = 0.05, max_GA_generations = 10, iterations_with_no_change_GA = 5, seed = 12345, classification_mode_graph = c("average spectra", "single spectra clique"), features_to_use_for_graph = c("all", "model"), plot_figures = TRUE, plot_graphs = TRUE, plot_legends = c("sample name", "legend", "plot name"), progress_bar = NULL, tolerance_ppm = NULL) {
+    spectral_classification <<- function(spectra_path, filepath_R = NULL, model_list, model_performance_parameter_list = NULL, classification_mode = c("pixel", "profile"), peak_picking_algorithm = "SuperSmoother", deisotope_peaklist = FALSE, preprocessing_parameters = list(mass_range = c(4000,15000), transformation_algorithm = NULL, smoothing_algorithm = "SavitzkyGolay", smoothing_strength = "medium", baseline_subtraction_algorithm = "SNIP", baseline_subtraction_algorithm_parameter = 100, normalization_algorithm = "TIC", normalization_mass_range = NULL, preprocess_spectra_in_packages_of = 0, spectral_alignment_algorithm = NULL), tof_mode = "linear", allow_parallelization = FALSE, decision_method_ensemble = c("unweighted majority", "class assignment probabilities", "bayesian probabilities"), pixel_grouping = c("single", "moving window average", "graph", "hca"), moving_window_size = 5, number_of_hca_nodes = 10, number_of_spectra_partitions_graph = 1, partitioning_method_graph = "space", correlation_method_for_adjacency_matrix = "pearson", correlation_threshold_for_adjacency_matrix = 0.95, pvalue_threshold_for_adjacency_matrix = 0.05, max_GA_generations = 10, iterations_with_no_change_GA = 5, seed = 12345, classification_mode_graph = c("average spectra", "single spectra clique"), features_to_use_for_graph = c("all", "model"), plot_figures = TRUE, plot_graphs = TRUE, plot_legends = c("sample name", "legend", "plot name"), progress_bar = NULL, tolerance_ppm = NULL) {
         ### Install and load the required packages
         require(MALDIquant)
         require(MALDIquantForeign)
@@ -4192,45 +4192,141 @@ functions_mass_spectrometry <- function() {
             ########## Ensemble results
             if ("pixel" %in% classification_mode) {
                 if (length(list_of_models) > 2 && !is.null(final_result_matrix_msi_patient) && classes_are_the_same_for_each_model == TRUE && outcomes_are_the_same_for_each_model == TRUE) {
-                    ### Classification matrix
-                    classification_ensemble_matrix_msi <- ensemble_vote_classification(classification_matrix = final_result_matrix_msi_patient, class_list = model_list[[1]]$class_list, decision_method = decision_method_ensemble, vote_weights = vote_weights_ensemble, classification_probabilities_list = predicted_classes_probs_list, performance_parameter_list = model_performance_parameter_list, type_of_validation_for_performance_estimation = "cv")
-                    # Store the ensemble classification matrix in the final output list
-                    classification_ensemble_matrix_msi_all[[sample_name]] <- classification_ensemble_matrix_msi
-                    ### Molecular image of the classification
-                    # Generate the "predicted classes" vector from the ensemble classification matrix
-                    predicted_classes <- as.character(classification_ensemble_matrix_msi)
-                    names(predicted_classes) <- rownames(classification_ensemble_matrix_msi)
-                    # Define the class as number depending on the outcome
-                    outcome_and_class <- outcome_and_class_to_MS(class_list = model_list[[1]]$class_list, outcome_list = model_list[[1]]$outcome_list, class_vector = predicted_classes)
-                    # Replace the spectra intensities with the class number for plotting purposes
-                    class_as_number <- outcome_and_class$class_vector_as_numeric
-                    spectra_for_plotting <- sample_spectra
-                    if (is.null(names(spectra_for_plotting)) || is.null(names(class_as_number))) {
-                        for (s in 1:length(spectra_for_plotting)) {
-                            spectra_for_plotting[[s]]@intensity <- rep(class_as_number[s], length(spectra_for_plotting[[s]]@intensity))
+                    ##### Unweighted majority
+                    if ("unweighted majority" %in% decision_method_ensemble) {
+                        ### Classification matrix
+                        classification_ensemble_matrix_msi <- ensemble_vote_classification(classification_matrix = final_result_matrix_msi_patient, class_list = model_list[[1]]$class_list, weighted_decision_method = "unweighted majority", classification_probabilities_list = predicted_classes_probs_list, performance_parameter_list = model_performance_parameter_list, type_of_validation_for_performance_estimation = "cv")
+                        # Store the ensemble classification matrix in the final output list
+                        classification_ensemble_matrix_msi_all[[sample_name]][["unweighted majority"]] <- classification_ensemble_matrix_msi
+                        ### Molecular image of the classification
+                        # Generate the "predicted classes" vector from the ensemble classification matrix
+                        predicted_classes <- as.character(classification_ensemble_matrix_msi)
+                        names(predicted_classes) <- rownames(classification_ensemble_matrix_msi)
+                        # Define the class as number depending on the outcome
+                        outcome_and_class <- outcome_and_class_to_MS(class_list = model_list[[1]]$class_list, outcome_list = model_list[[1]]$outcome_list, class_vector = predicted_classes)
+                        # Replace the spectra intensities with the class number for plotting purposes
+                        class_as_number <- outcome_and_class$class_vector_as_numeric
+                        spectra_for_plotting <- sample_spectra
+                        if (is.null(names(spectra_for_plotting)) || is.null(names(class_as_number))) {
+                            for (s in 1:length(spectra_for_plotting)) {
+                                spectra_for_plotting[[s]]@intensity <- rep(class_as_number[s], length(spectra_for_plotting[[s]]@intensity))
+                            }
+                        } else {
+                            for (s in 1:length(spectra_for_plotting)) {
+                                spectra_for_plotting[[s]]@intensity <- rep(class_as_number[names(spectra_for_plotting)[s]], length(spectra_for_plotting[[s]]@intensity))
+                            }
                         }
+                        # Generate the MS images
+                        slices <- msiSlices(spectra_for_plotting, center = spectra_for_plotting[[1]]@mass[(length(spectra_for_plotting[[1]]@mass)/2)], tolerance = 1, adjust = TRUE, method = "median")
+                        plotMsiSlice(slices, legend = FALSE, scale = F)
+                        # Define the legend
+                        if ("legend" %in% plot_legends) {
+                            legend_text <- outcome_and_class$legend_text
+                            legend_fill <- outcome_and_class$legend_fill
+                            legend(x = "bottomright", legend = legend_text, fill = legend_fill, xjust = 0.5, yjust = 0.5)
+                        }
+                        if ("sample name" %in% plot_legends) {
+                            legend(x = "topright", legend = spectra_for_plotting[[1]]@metaData$file[1], xjust = 0.5, yjust = 0.5)
+                        }
+                        if ("plot name" %in% plot_legends) {
+                            legend(x = "topleft", legend = "Ensemble classifier", xjust = 0.5, yjust = 0.5)
+                        }
+                        # Store the plot into the list of images
+                        classification_ensemble_ms_image_list[[sample_name]][["unweighted majority"]] <- recordPlot()
                     } else {
-                        for (s in 1:length(spectra_for_plotting)) {
-                            spectra_for_plotting[[s]]@intensity <- rep(class_as_number[names(spectra_for_plotting)[s]], length(spectra_for_plotting[[s]]@intensity))
+                        classification_ensemble_matrix_msi_all[[sample_name]][["unweighted majority"]] <- NULL
+                        classification_ensemble_ms_image_list[[sample_name]][["unweighted majority"]] <- NULL
+                    }
+                    ##### Class assignment probabilities
+                    if ("class assignment probabilities" %in% decision_method_ensemble) {
+                        ### Classification matrix
+                        classification_ensemble_matrix_msi <- ensemble_vote_classification(classification_matrix = final_result_matrix_msi_patient, class_list = model_list[[1]]$class_list, weighted_decision_method = "class assignment probabilities", classification_probabilities_list = predicted_classes_probs_list, performance_parameter_list = model_performance_parameter_list, type_of_validation_for_performance_estimation = "cv")
+                        # Store the ensemble classification matrix in the final output list
+                        classification_ensemble_matrix_msi_all[[sample_name]][["class assignment probabilities"]] <- classification_ensemble_matrix_msi
+                        ### Molecular image of the classification
+                        # Generate the "predicted classes" vector from the ensemble classification matrix
+                        predicted_classes <- as.character(classification_ensemble_matrix_msi)
+                        names(predicted_classes) <- rownames(classification_ensemble_matrix_msi)
+                        # Define the class as number depending on the outcome
+                        outcome_and_class <- outcome_and_class_to_MS(class_list = model_list[[1]]$class_list, outcome_list = model_list[[1]]$outcome_list, class_vector = predicted_classes)
+                        # Replace the spectra intensities with the class number for plotting purposes
+                        class_as_number <- outcome_and_class$class_vector_as_numeric
+                        spectra_for_plotting <- sample_spectra
+                        if (is.null(names(spectra_for_plotting)) || is.null(names(class_as_number))) {
+                            for (s in 1:length(spectra_for_plotting)) {
+                                spectra_for_plotting[[s]]@intensity <- rep(class_as_number[s], length(spectra_for_plotting[[s]]@intensity))
+                            }
+                        } else {
+                            for (s in 1:length(spectra_for_plotting)) {
+                                spectra_for_plotting[[s]]@intensity <- rep(class_as_number[names(spectra_for_plotting)[s]], length(spectra_for_plotting[[s]]@intensity))
+                            }
                         }
+                        # Generate the MS images
+                        slices <- msiSlices(spectra_for_plotting, center = spectra_for_plotting[[1]]@mass[(length(spectra_for_plotting[[1]]@mass)/2)], tolerance = 1, adjust = TRUE, method = "median")
+                        plotMsiSlice(slices, legend = FALSE, scale = F)
+                        # Define the legend
+                        if ("legend" %in% plot_legends) {
+                            legend_text <- outcome_and_class$legend_text
+                            legend_fill <- outcome_and_class$legend_fill
+                            legend(x = "bottomright", legend = legend_text, fill = legend_fill, xjust = 0.5, yjust = 0.5)
+                        }
+                        if ("sample name" %in% plot_legends) {
+                            legend(x = "topright", legend = spectra_for_plotting[[1]]@metaData$file[1], xjust = 0.5, yjust = 0.5)
+                        }
+                        if ("plot name" %in% plot_legends) {
+                            legend(x = "topleft", legend = "Ensemble classifier", xjust = 0.5, yjust = 0.5)
+                        }
+                        # Store the plot into the list of images
+                        classification_ensemble_ms_image_list[[sample_name]][["class assignment probabilities"]] <- recordPlot()
+                    } else {
+                        classification_ensemble_matrix_msi_all[[sample_name]][["class assignment probabilities"]] <- NULL
+                        classification_ensemble_ms_image_list[[sample_name]][["class assignment probabilities"]] <- NULL
                     }
-                    # Generate the MS images
-                    slices <- msiSlices(spectra_for_plotting, center = spectra_for_plotting[[1]]@mass[(length(spectra_for_plotting[[1]]@mass)/2)], tolerance = 1, adjust = TRUE, method = "median")
-                    plotMsiSlice(slices, legend = FALSE, scale = F)
-                    # Define the legend
-                    if ("legend" %in% plot_legends) {
-                        legend_text <- outcome_and_class$legend_text
-                        legend_fill <- outcome_and_class$legend_fill
-                        legend(x = "bottomright", legend = legend_text, fill = legend_fill, xjust = 0.5, yjust = 0.5)
+                    ##### Class assignment probabilities
+                    if ("bayesian probabilities" %in% decision_method_ensemble) {
+                        ### Classification matrix
+                        classification_ensemble_matrix_msi <- ensemble_vote_classification(classification_matrix = final_result_matrix_msi_patient, class_list = model_list[[1]]$class_list, weighted_decision_method = "bayesian probabilities", classification_probabilities_list = predicted_classes_probs_list, performance_parameter_list = model_performance_parameter_list, type_of_validation_for_performance_estimation = "cv")
+                        # Store the ensemble classification matrix in the final output list
+                        classification_ensemble_matrix_msi_all[[sample_name]][["bayesian probabilities"]] <- classification_ensemble_matrix_msi
+                        ### Molecular image of the classification
+                        # Generate the "predicted classes" vector from the ensemble classification matrix
+                        predicted_classes <- as.character(classification_ensemble_matrix_msi)
+                        names(predicted_classes) <- rownames(classification_ensemble_matrix_msi)
+                        # Define the class as number depending on the outcome
+                        outcome_and_class <- outcome_and_class_to_MS(class_list = model_list[[1]]$class_list, outcome_list = model_list[[1]]$outcome_list, class_vector = predicted_classes)
+                        # Replace the spectra intensities with the class number for plotting purposes
+                        class_as_number <- outcome_and_class$class_vector_as_numeric
+                        spectra_for_plotting <- sample_spectra
+                        if (is.null(names(spectra_for_plotting)) || is.null(names(class_as_number))) {
+                            for (s in 1:length(spectra_for_plotting)) {
+                                spectra_for_plotting[[s]]@intensity <- rep(class_as_number[s], length(spectra_for_plotting[[s]]@intensity))
+                            }
+                        } else {
+                            for (s in 1:length(spectra_for_plotting)) {
+                                spectra_for_plotting[[s]]@intensity <- rep(class_as_number[names(spectra_for_plotting)[s]], length(spectra_for_plotting[[s]]@intensity))
+                            }
+                        }
+                        # Generate the MS images
+                        slices <- msiSlices(spectra_for_plotting, center = spectra_for_plotting[[1]]@mass[(length(spectra_for_plotting[[1]]@mass)/2)], tolerance = 1, adjust = TRUE, method = "median")
+                        plotMsiSlice(slices, legend = FALSE, scale = F)
+                        # Define the legend
+                        if ("legend" %in% plot_legends) {
+                            legend_text <- outcome_and_class$legend_text
+                            legend_fill <- outcome_and_class$legend_fill
+                            legend(x = "bottomright", legend = legend_text, fill = legend_fill, xjust = 0.5, yjust = 0.5)
+                        }
+                        if ("sample name" %in% plot_legends) {
+                            legend(x = "topright", legend = spectra_for_plotting[[1]]@metaData$file[1], xjust = 0.5, yjust = 0.5)
+                        }
+                        if ("plot name" %in% plot_legends) {
+                            legend(x = "topleft", legend = "Ensemble classifier", xjust = 0.5, yjust = 0.5)
+                        }
+                        # Store the plot into the list of images
+                        classification_ensemble_ms_image_list[[sample_name]][["bayesian probabilities"]] <- recordPlot()
+                    } else {
+                        classification_ensemble_matrix_msi_all[[sample_name]][["bayesian probabilities"]] <- NULL
+                        classification_ensemble_ms_image_list[[sample_name]][["bayesian probabilities"]] <- NULL
                     }
-                    if ("sample name" %in% plot_legends) {
-                        legend(x = "topright", legend = spectra_for_plotting[[1]]@metaData$file[1], xjust = 0.5, yjust = 0.5)
-                    }
-                    if ("plot name" %in% plot_legends) {
-                        legend(x = "topleft", legend = "Ensemble classifier", xjust = 0.5, yjust = 0.5)
-                    }
-                    # Store the plot into the list of images
-                    classification_ensemble_ms_image_list[[sample_name]] <- recordPlot()
                 } else {
                     classification_ensemble_matrix_msi_all[[sample_name]] <- NULL
                     classification_ensemble_ms_image_list[[sample_name]] <- NULL
@@ -4239,7 +4335,7 @@ functions_mass_spectrometry <- function() {
             if ("profile" %in% classification_mode) {
                 if (length(list_of_models) > 2 && !is.null(final_result_matrix_profile_patient) && classes_are_the_same_for_each_model == TRUE && outcomes_are_the_same_for_each_model == TRUE) {
                     ########## Ensemble results
-                    classification_ensemble_matrix_profile <- ensemble_vote_classification(classification_matrix = final_result_matrix_profile_patient, class_list = model_list[[1]]$class_list, decision_method = decision_method_ensemble, vote_weights = vote_weights_ensemble, classification_probabilities_list = predicted_classes_probs_list, performance_parameter_list = model_performance_parameter_list, type_of_validation_for_performance_estimation = "cv")
+                    classification_ensemble_matrix_profile <- ensemble_vote_classification(classification_matrix = final_result_matrix_profile_patient, class_list = model_list[[1]]$class_list, weighted_decision_method = decision_method_ensemble, classification_probabilities_list = predicted_classes_probs_list, performance_parameter_list = model_performance_parameter_list, type_of_validation_for_performance_estimation = "cv")
                     # Store the ensemble classification matrix in the final output list
                     if (is.null(classification_ensemble_matrix_profile_all)) {
                         classification_ensemble_matrix_profile_all <- classification_ensemble_matrix_profile
@@ -5310,13 +5406,20 @@ functions_mass_spectrometry <- function() {
             for (cl in 1:length(class_list)) {
                 # One is the positive class
                 positive_class_cv <- class_list[cl]
+                negative_class_cv <- class_list[class_list != positive_class_cv]
                 # Confusion matrix (do not overwrite the exsisting one, it is always the same, independently from the positive class chosen)
                 if (is.null(confusion_matrix)) {
-                    confusion_matrix <- confusionMatrix(model_object, mode = "everything", dnn = c("Predicted", "Actual"))
+                    confusion_matrix <- confusionMatrix(model_object, mode = "everything", dnn = c("Predicted", "Actual"), positive = positive_class_cv)
                 }
                 # Convert it into a dataframe (rows = Predicted, columns = Actual)
                 if (is.null(confusion_matrix_df)) {
-                    confusion_matrix_df <- as.matrix(cbind(confusion_matrix$table[,1], confusion_matrix$table[,2]))
+                    for (cl in 1:ncol(confusion_matrix$table)) {
+                        if (is.null(confusion_matrix_df)) {
+                            confusion_matrix_df <- as.matrix(cbind(confusion_matrix$table[,cl]))
+                        } else {
+                            confusion_matrix_df <- as.matrix(cbind(confusion_matrix_df, confusion_matrix$table[,cl]))
+                        }
+                    }
                     colnames(confusion_matrix_df) <- colnames(confusion_matrix$table)
                     rownames(confusion_matrix_df) <- rownames(confusion_matrix$table)
                     confusion_matrix_df <- as.data.frame(confusion_matrix_df)
@@ -5324,13 +5427,27 @@ functions_mass_spectrometry <- function() {
                 # Determine the performance parameters (create a vector with all of them, named)
                 performance_parameter_vector <- vector()
                 performance_parameter_vector[["class proportion"]] <- nrow(training_set[training_set[, discriminant_attribute] == positive_class_cv, ]) / nrow(training_set)
-                performance_parameter_vector[["recall"]] <- recall(confusion_matrix$table, positive = positive_class_cv)
-                performance_parameter_vector[["precision"]] <- precision(confusion_matrix$table, positive = positive_class_cv)
-                performance_parameter_vector[["sensitivity"]] <- sensitivity(confusion_matrix$table, positive = positive_class_cv)
-                performance_parameter_vector[["specificity"]] <- specificity(confusion_matrix$table, positive = positive_class_cv)
-                performance_parameter_vector[["PPV"]] <- posPredValue(confusion_matrix$table, positive = positive_class_cv)
-                performance_parameter_vector[["NPV"]] <- negPredValue(confusion_matrix$table, positive = positive_class_cv)
+                true_positives <- confusion_matrix_df[positive_class_cv, positive_class_cv]
+                true_negatives <- confusion_matrix_df[negative_class_cv, negative_class_cv]
+                false_positives <- confusion_matrix_df[positive_class_cv, negative_class_cv]
+                false_negatives <- confusion_matrix_df[negative_class_cv, positive_class_cv]
+                performance_parameter_vector[["sensitivity"]] <- true_positives / (true_positives + false_negatives)
+                performance_parameter_vector[["specificity"]] <- true_negatives / (true_negatives + false_positives)
+                performance_parameter_vector[["TPR"]] <- performance_parameter_vector[["sensitivity"]]
+                performance_parameter_vector[["TNR"]] <- performance_parameter_vector[["specificity"]]
+                performance_parameter_vector[["FPR"]] <- false_positives / (true_negatives + false_positives)
+                performance_parameter_vector[["FNR"]] <- false_negatives / (true_positives + false_negatives)
+                performance_parameter_vector[["accuracy"]] <- (true_positives + true_negatives) / (true_positives + true_negatives + false_positives + false_negatives)
+                performance_parameter_vector[["PPV"]] <- true_positives / (true_positives + false_positives)
+                performance_parameter_vector[["NPV"]] <- true_negatives / (true_negatives + false_negatives)
+                performance_parameter_vector[["FDR"]] <- 1 - performance_parameter_vector[["PPV"]]
+                performance_parameter_vector[["FOR"]] <- 1 - performance_parameter_vector[["NPV"]]
+                performance_parameter_vector[["LR+"]] <- performance_parameter_vector[["TPR"]] / performance_parameter_vector[["FPR"]]
+                performance_parameter_vector[["LR-"]] <- performance_parameter_vector[["FNR"]] / performance_parameter_vector[["TNR"]]
+                performance_parameter_vector[["DOR"]] <- performance_parameter_vector[["LR+"]] / performance_parameter_vector[["LR-"]]
                 performance_parameter_vector[["balanced accuracy"]] <- (performance_parameter_vector[["sensitivity"]] + performance_parameter_vector[["specificity"]]) / 2
+                performance_parameter_vector[["recall"]] <- performance_parameter_vector[["sensitivity"]]
+                performance_parameter_vector[["precision"]] <- performance_parameter_vector[["PPV"]]
                 # Store the vector in the list, named according to the positive class of the CV
                 performance_parameter_list[[positive_class_cv]] <- performance_parameter_vector
             }
@@ -5349,13 +5466,20 @@ functions_mass_spectrometry <- function() {
             for (cl in 1:length(class_list)) {
                 # One is the positive class
                 positive_class_cv <- class_list[cl]
+                negative_class_cv <- class_list[class_list != positive_class_cv]
                 # Confusion matrix (do not overwrite the exsisting one, it is always the same, independently from the positive class chosen)
                 if (is.null(confusion_matrix)) {
                     confusion_matrix <- confusionMatrix(data = predicted_classes_model, reference = test_set[, discriminant_attribute], positive = positive_class_cv, dnn = c("Predicted", "Actual"), mode = "everything")
                 }
                 # Convert it into a dataframe (rows = Predicted, columns = Actual)
                 if (is.null(confusion_matrix_df)) {
-                    confusion_matrix_df <- as.matrix(cbind(confusion_matrix$table[,1], confusion_matrix$table[,2]))
+                    for (cl in 1:ncol(confusion_matrix$table)) {
+                        if (is.null(confusion_matrix_df)) {
+                            confusion_matrix_df <- as.matrix(cbind(confusion_matrix$table[,cl]))
+                        } else {
+                            confusion_matrix_df <- as.matrix(cbind(confusion_matrix_df, confusion_matrix$table[,cl]))
+                        }
+                    }
                     colnames(confusion_matrix_df) <- colnames(confusion_matrix$table)
                     rownames(confusion_matrix_df) <- rownames(confusion_matrix$table)
                     confusion_matrix_df <- as.data.frame(confusion_matrix_df)
@@ -5363,13 +5487,27 @@ functions_mass_spectrometry <- function() {
                 # Determine the performance parameters (create a vector with all of them, named)
                 performance_parameter_vector <- vector()
                 performance_parameter_vector[["class proportion"]] <- nrow(training_set[training_set[, discriminant_attribute] == positive_class_cv, ]) / nrow(training_set)
-                performance_parameter_vector[["recall"]] <- recall(confusion_matrix$table, positive = positive_class_cv)
-                performance_parameter_vector[["precision"]] <- precision(confusion_matrix$table, positive = positive_class_cv)
-                performance_parameter_vector[["sensitivity"]] <- sensitivity(confusion_matrix$table, positive = positive_class_cv)
-                performance_parameter_vector[["specificity"]] <- specificity(confusion_matrix$table, positive = positive_class_cv)
-                performance_parameter_vector[["PPV"]] <- posPredValue(confusion_matrix$table, positive = positive_class_cv)
-                performance_parameter_vector[["NPV"]] <- negPredValue(confusion_matrix$table, positive = positive_class_cv)
+                true_positives <- confusion_matrix_df[positive_class_cv, positive_class_cv]
+                true_negatives <- confusion_matrix_df[negative_class_cv, negative_class_cv]
+                false_positives <- confusion_matrix_df[positive_class_cv, negative_class_cv]
+                false_negatives <- confusion_matrix_df[negative_class_cv, positive_class_cv]
+                performance_parameter_vector[["sensitivity"]] <- true_positives / (true_positives + false_negatives)
+                performance_parameter_vector[["specificity"]] <- true_negatives / (true_negatives + false_positives)
+                performance_parameter_vector[["TPR"]] <- performance_parameter_vector[["sensitivity"]]
+                performance_parameter_vector[["TNR"]] <- performance_parameter_vector[["specificity"]]
+                performance_parameter_vector[["FPR"]] <- false_positives / true_negatives + false_positives
+                performance_parameter_vector[["FNR"]] <- false_negatives / true_positives + false_negatives
+                performance_parameter_vector[["accuracy"]] <- (true_positives + true_negatives) / (true_positives + true_negatives + false_positives + false_negatives)
+                performance_parameter_vector[["PPV"]] <- true_positives / (true_positives + false_positives)
+                performance_parameter_vector[["NPV"]] <- true_negatives / (true_negatives + false_negatives)
+                performance_parameter_vector[["FDR"]] <- 1 - performance_parameter_vector[["PPV"]]
+                performance_parameter_vector[["FOR"]] <- 1 - performance_parameter_vector[["NPV"]]
+                performance_parameter_vector[["LR+"]] <- performance_parameter_vector[["TPR"]] / performance_parameter_vector[["FPR"]]
+                performance_parameter_vector[["LR-"]] <- performance_parameter_vector[["FNR"]] / performance_parameter_vector[["TNR"]]
+                performance_parameter_vector[["DOR"]] <- performance_parameter_vector[["LR+"]] / performance_parameter_vector[["LR-"]]
                 performance_parameter_vector[["balanced accuracy"]] <- (performance_parameter_vector[["sensitivity"]] + performance_parameter_vector[["specificity"]]) / 2
+                performance_parameter_vector[["recall"]] <- performance_parameter_vector[["sensitivity"]]
+                performance_parameter_vector[["precision"]] <- performance_parameter_vector[["PPV"]]
                 # Store the vector in the list, named according to the positive class of the CV
                 performance_parameter_list[[positive_class_cv]] <- performance_parameter_vector
             }
@@ -6111,10 +6249,13 @@ functions_mass_spectrometry <- function() {
                 # For each peaklist in the Library
                 if (length(peaks_sample@mass) > 0 && length(peaks_database_temp@mass) > 0) {
                     matching_signals_number <- length(intersect(peaks_sample@mass, peaks_database_temp@mass))
+                    matching_signals <- intersect(peaks_sample@mass, peaks_database_temp@mass)
                 } else if (length(peaks_sample@mass) == 0 || length(peaks_database_temp@mass) == 0) {
                     matching_signals_number <- 0
+                    matching_signals <- numeric()
                 } else {
                     matching_signals_number <- 0
+                    matching_signals <- numeric()
                 }
                 # Append this row to the global matrix
                 matching_signals_matrix[1,db] <- matching_signals_number
@@ -6140,8 +6281,9 @@ functions_mass_spectrometry <- function() {
                 # Intensity matrix
                 intensity_matrix_global <- intensityMatrix(peaks_all, spectra_all)
                 # Keep only the matching signals
-                #columns_to_keep <- as.character(matching_signals)
-                #intensity_matrix_global <- intensity_matrix_global[,columns_to_keep]
+                if (length(matching_signals) > 0) {
+                    intensity_matrix_global <- as.matrix(cbind(intensity_matrix_global[, as.character(matching_signals)]))
+                }
                 # Weighted correlation between samples (library + test samples) (samples must be as columns and features as test) - With weights
                 if (intensity_correction_coefficient != 0 && intensity_correction_coefficient != 1 && correlation_method == "pearson") {
                     # Compute the vector of weights
@@ -6150,23 +6292,28 @@ functions_mass_spectrometry <- function() {
                     intensity_correlation_sample <- as.matrix(intensity_matrix_global[(database_size + 1):nrow(intensity_matrix_global), 1:database_size])
                 } else if (intensity_correction_coefficient == 1 || (intensity_correction_coefficient != 0 && intensity_correction_coefficient != 1 && correlation_method != "pearson")) {
                     t_intensity_matrix_global <- t(intensity_matrix_global)
-                    correlation_sample <- cor.test(t_intensity_matrix_global[,1], t_intensity_matrix_global[,2], method = correlation_method)
-                    intensity_correlation_sample <- correlation_sample$estimate
-                    # pvalue
-                    pvalue <- correlation_sample$p.value
-                    pvalue_replacement_function <- function(x, number_of_digits) {
-                        if (is.na(x)) {
-                            x <- "Not available"
-                        } else if (x < 0.00001) {
-                            x <- "< 0.00001"
-                        } else {
-                            x <- as.character(round(x, digits = number_of_digits))
+                    if (ncol(t_intensity_matrix_global) >= 3) {
+                        correlation_sample <- cor.test(t_intensity_matrix_global[,1], t_intensity_matrix_global[,2], method = correlation_method)
+                        intensity_correlation_sample <- correlation_sample$estimate
+                        # pvalue
+                        pvalue <- correlation_sample$p.value
+                        pvalue_replacement_function <- function(x, number_of_digits) {
+                            if (is.na(x)) {
+                                x <- "Not available"
+                            } else if (x < 0.00001) {
+                                x <- "< 0.00001"
+                            } else {
+                                x <- as.character(round(x, digits = number_of_digits))
+                            }
+                            return(x)
                         }
-                        return(x)
+                        pvalue <- pvalue_replacement_function(pvalue, number_of_digits = 6)
+                        # Append this row to the global matrix
+                        pvalue_matrix[1, db] <- pvalue
+                    } else {
+                        intensity_correlation_sample <- 1
+                        pvalue_matrix[1, db] <- 0
                     }
-                    pvalue <- pvalue_replacement_function(pvalue, number_of_digits = 6)
-                    # Append this row to the global matrix
-                    pvalue_matrix[1, db] <- pvalue
                 } else if (intensity_correction_coefficient == 0) {
                     intensity_correlation_sample <- 1
                 }
@@ -6565,7 +6712,7 @@ functions_mass_spectrometry <- function() {
                     }
                     # Append this row to the global matrix
                     intensity_matching_matrix[1, db] <- intensity_matching_sample
-                } else if (signal_intensity_evaluation == "peak-wise adjusted percentage") {
+                } else if (signal_intensity_evaluation == "peak-wise adjusted percentage" && (!is.null(x[["database_spectral_variability_list"]]) && !is.null(x[["test_spectral_variability_list"]])) || (length(x[["database_spectral_variability_list"]]) > 0 && length(x[["test_spectral_variability_list"]]) > 0)) {
                     ########### PEAK-WISE ADJUSTED INTENSITY PERCENTAGE
                     # Create a counter, symmetrical to the database Peaklist
                     if (length(peaks_sample@mass) > 0 && length(peaks_database_temp@mass) > 0) {
@@ -6622,7 +6769,7 @@ functions_mass_spectrometry <- function() {
                     }
                     # Append this row to the global matrix
                     intensity_matching_matrix[1, db] <- intensity_matching_sample
-                } else if (signal_intensity_evaluation == "average coefficient of variation") {
+                } else if (signal_intensity_evaluation == "average coefficient of variation" && (!is.null(x[["database_spectral_variability_list"]]) && !is.null(x[["test_spectral_variability_list"]])) || (length(x[["database_spectral_variability_list"]]) > 0 && length(x[["test_spectral_variability_list"]]) > 0)) {
                     ########### AVERAGE COEFFICIENT OF VARIATION
                     # Create a counter, symmetrical to the database Peaklist
                     if (length(peaks_sample@mass) > 0 && length(peaks_database_temp@mass) > 0) {
@@ -8517,6 +8664,8 @@ functions_mass_spectrometry <- function() {
 
 
 
+
+
 ##########################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################
 
 
@@ -8556,7 +8705,7 @@ spectral_typer <- function() {
     
     
     ### Program version (Specified by the program writer!!!!)
-    R_script_version <- "2017.06.19.0"
+    R_script_version <- "2017.06.20.3"
     ### Force update (in case something goes wrong after an update, when checking for updates and reading the variable force_update, the script can automatically download the latest working version, even if the rest of the script is corrupted, because it is the first thing that reads)
     force_update <- FALSE
     ### GitHub URL where the R file is
@@ -9376,66 +9525,67 @@ spectral_typer <- function() {
         # Default
         if (length(similarity_criteria) == 1 && similarity_criteria == "") {
             similarity_criteria <- "correlation"
-        }
-        # Correlation method
-        if ("correlation" %in% similarity_criteria) {
-            correlation_method <- select.list(c("Pearson","Spearman"), title="Correlation method", multiple = FALSE, preselect = "Pearson")
-            # Raise the focus on the preproc window
-            tkraise(window)
-            if (correlation_method == "Pearson" || correlation_method == "") {
-                correlation_method <- "pearson"
-                correlation_method_value <- "Pearson"
-            } else if (correlation_method == "Spearman") {
-                correlation_method <- "spearman"
-                correlation_method_value <- "Spearman"
+        } else {
+            # Correlation method
+            if ("correlation" %in% similarity_criteria) {
+                correlation_method <- select.list(c("Pearson","Spearman"), title="Correlation method", multiple = FALSE, preselect = "Pearson")
+                # Raise the focus on the preproc window
+                tkraise(window)
+                if (correlation_method == "Pearson" || correlation_method == "") {
+                    correlation_method <- "pearson"
+                    correlation_method_value <- "Pearson"
+                } else if (correlation_method == "Spearman") {
+                    correlation_method <- "spearman"
+                    correlation_method_value <- "Spearman"
+                }
+                # Fix the similarity_criteria value for correlation
+                similarity_criteria_value_correlation <- paste0(correlation_method_value, "'s correlation")
+                # Escape the function
+                correlation_method <<- correlation_method
+                correlation_method_value <<- correlation_method_value
+                similarity_criteria_value_correlation <<- similarity_criteria_value_correlation
             }
-            # Fix the similarity_criteria value for correlation
-            similarity_criteria_value_correlation <- paste0(correlation_method_value, "'s correlation")
-            # Escape the function
-            correlation_method <<- correlation_method
-            correlation_method_value <<- correlation_method_value
-            similarity_criteria_value_correlation <<- similarity_criteria_value_correlation
-        }
-        # Hierarchical clustering distance method
-        if ("hca" %in% similarity_criteria) {
-            hierarchical_distance_method <- select.list(c("euclidean", "maximum", "manhattan", "canberra", "binary", "minkowski"), title = "Hierarchical clustering distance", multiple = FALSE, preselect = "euclidean")
-            # Raise the focus on the preproc window
-            tkraise(window)
-            if (hierarchical_distance_method == "") {
-                hierarchical_distance_method <- "euclidean"
+            # Hierarchical clustering distance method
+            if ("hca" %in% similarity_criteria) {
+                hierarchical_distance_method <- select.list(c("euclidean", "maximum", "manhattan", "canberra", "binary", "minkowski"), title = "Hierarchical clustering distance", multiple = FALSE, preselect = "euclidean")
+                # Raise the focus on the preproc window
+                tkraise(window)
+                if (hierarchical_distance_method == "") {
+                    hierarchical_distance_method <- "euclidean"
+                }
+                hierarchical_distance_method_value <- hierarchical_distance_method
+                # Fix the similarity_criteria value for hierarchical clustering
+                similarity_criteria_value_hierarchical_distance <- paste0("hca (", hierarchical_distance_method_value, ")")
+                # Escape the function
+                hierarchical_distance_method <<- hierarchical_distance_method
+                hierarchical_distance_method_value <<- hierarchical_distance_method_value
+                similarity_criteria_value_hierarchical_distance <<- similarity_criteria_value_hierarchical_distance
             }
-            hierarchical_distance_method_value <- hierarchical_distance_method
-            # Fix the similarity_criteria value for hierarchical clustering
-            similarity_criteria_value_hierarchical_distance <- paste0("hca (", hierarchical_distance_method_value, ")")
-            # Escape the function
-            hierarchical_distance_method <<- hierarchical_distance_method
-            hierarchical_distance_method_value <<- hierarchical_distance_method_value
-            similarity_criteria_value_hierarchical_distance <<- similarity_criteria_value_hierarchical_distance
-        }
-        # Signal intensity
-        if ("signal intensity" %in% similarity_criteria) {
-            # Catch the value from the menu
-            signal_intensity_evaluation <- select.list(c("fixed percentage", "peak-wise adjusted percentage", "average coefficient of variation"), title = "Signal intensity evaluation", preselect = "peak-wise adjusted percentage")
-            # Raise the focus on the preproc window
-            tkraise(window)
-            # Default
-            if (signal_intensity_evaluation == "") {
-                signal_intensity_evaluation <- "peak-wise adjusted percentage"
+            # Signal intensity
+            if ("signal intensity" %in% similarity_criteria) {
+                # Catch the value from the menu
+                signal_intensity_evaluation <- select.list(c("fixed percentage", "peak-wise adjusted percentage", "average coefficient of variation"), title = "Signal intensity evaluation", preselect = "peak-wise adjusted percentage")
+                # Raise the focus on the preproc window
+                tkraise(window)
+                # Default
+                if (signal_intensity_evaluation == "") {
+                    signal_intensity_evaluation <- "peak-wise adjusted percentage"
+                }
+                # Fix the method value
+                signal_intensity_evaluation_method_value <- signal_intensity_evaluation
+                if (signal_intensity_evaluation_method_value == "fixed percentage") {
+                    signal_intensity_evaluation_method_value <- "fixed %"
+                } else if (signal_intensity_evaluation_method_value == "peak-wise adjusted percentage") {
+                    signal_intensity_evaluation_method_value <- "peak-wise %"
+                } else if (signal_intensity_evaluation_method_value == "average coefficient of variation") {
+                    signal_intensity_evaluation_method_value <- "mean CV"
+                }
+                # Fix the similarity_criteria value for signal intensity
+                similarity_criteria_value_signal_intensity <- paste0("signal intensity (", signal_intensity_evaluation_method_value, ")")
+                # Escape the function
+                signal_intensity_evaluation <<- signal_intensity_evaluation
+                similarity_criteria_value_signal_intensity <<- similarity_criteria_value_signal_intensity
             }
-            # Fix the method value
-            signal_intensity_evaluation_method_value <- signal_intensity_evaluation
-            if (signal_intensity_evaluation_method_value == "fixed percentage") {
-                signal_intensity_evaluation_method_value <- "fixed %"
-            } else if (signal_intensity_evaluation_method_value == "peak-wise adjusted percentage") {
-                signal_intensity_evaluation_method_value <- "peak-wise %"
-            } else if (signal_intensity_evaluation_method_value == "average coefficient of variation") {
-                signal_intensity_evaluation_method_value <- "mean CV"
-            }
-            # Fix the similarity_criteria value for signal intensity
-            similarity_criteria_value_signal_intensity <- paste0("signal intensity (", signal_intensity_evaluation_method_value, ")")
-            # Escape the function
-            signal_intensity_evaluation <<- signal_intensity_evaluation
-            similarity_criteria_value_signal_intensity <<- similarity_criteria_value_signal_intensity
         }
         # Displaying value
         similarity_criteria_value <- NULL
@@ -9856,6 +10006,9 @@ spectral_typer <- function() {
                 ### Messagebox
                 tkmessageBox(title = "Import successful", message = "The spectra have been successfully imported and preprocessed", icon = "info")
             }, silent = TRUE)
+            if (is.null(spectra_database) || is.null(spectra_test)) {
+                close(import_progress_bar)
+            }
         } else if (is.null(filepath_database) || is.null(filepath_test)) {
             ### Messagebox
             tkmessageBox(title = "Folder not set", message = "The spectra folder has not been set. Set if before importing the spectra", icon = "warning")
@@ -10034,37 +10187,45 @@ spectral_typer <- function() {
             setTkProgressBar(st_progress_bar, value = 0.20, title = NULL, label = "Computing correlation...")
             all_is_completed_successfully <- logical()
             if ("correlation" %in% similarity_criteria) {
+                all_is_completed_successfully_correlation <- FALSE
                 try({
                     score_correlation_matrix <- spectral_typer_score_correlation_matrix(spectra_database, spectra_test, filepath_database, filepath_test, class_list_library = database_folder_list, peaks_filtering_percentage_threshold = peaks_filtering_threshold_percent, low_intensity_percentage_threshold = low_intensity_peak_removal_percentage_threshold, low_intensity_threshold_method = low_intensity_peak_removal_threshold_method, tof_mode = tof_mode, correlation_method = correlation_method, intensity_correction_coefficient = intensity_correction_coefficient, spectra_format = spectra_format, spectra_path_output = spectra_path_output, score_only = score_only, allow_parallelization = allow_parallelization, score_threshold_values = score_threshold_values, tolerance_ppm = tolerance_ppm, peak_picking_mode = peak_picking_mode, signals_to_take = signals_to_take, peak_picking_SNR = SNR, peak_picking_algorithm = peak_picking_algorithm, peak_deisotoping = peak_deisotoping, peak_enveloping = peak_enveloping, spectral_alignment_algorithm = spectral_alignment_algorithm, spectral_alignment_reference = spectral_alignment_reference)
-                    all_is_completed_successfully <- append(all_is_completed_successfully, TRUE)
+                    all_is_completed_successfully_correlation <- TRUE
                 }, silent = TRUE)
+                all_is_completed_successfully <- append(all_is_completed_successfully, all_is_completed_successfully_correlation)
             }
             ############### HIERARCHICAL CLUSTERING ANALYSIS
             # Progress bar
             setTkProgressBar(st_progress_bar, value = 0.40, title = NULL, label = "Computing distance...")
             if ("hca" %in% similarity_criteria) {
+                all_is_completed_successfully_hca <- FALSE
                 try({
                     score_hca <- spectral_typer_score_hierarchical_distance(spectra_database, spectra_test, class_list_library = database_folder_list, peaks_filtering_percentage_threshold = peaks_filtering_threshold_percent, low_intensity_percentage_threshold = low_intensity_peak_removal_percentage_threshold, low_intensity_threshold_method = low_intensity_peak_removal_threshold_method, tof_mode = tof_mode, spectra_path_output = spectra_path_output, score_only = score_only, spectra_format = spectra_format, hierarchical_distance_method = hierarchical_distance_method, normalize_distances = TRUE, normalization_method = "max", tolerance_ppm = tolerance_ppm, allow_parallelization = allow_parallelization, peak_picking_mode = peak_picking_mode, signals_to_take = signals_to_take, peak_picking_SNR = SNR, peak_picking_algorithm = peak_picking_algorithm, peak_deisotoping = peak_deisotoping, peak_enveloping = peak_enveloping, spectral_alignment_algorithm = spectral_alignment_algorithm, spectral_alignment_reference = spectral_alignment_reference)
-                    all_is_completed_successfully <- append(all_is_completed_successfully, TRUE)
+                    all_is_completed_successfully_hca <- TRUE
                 }, silent = TRUE)
+                all_is_completed_successfully <- append(all_is_completed_successfully, all_is_completed_successfully_hca)
             }
             ############### SIMILARITY INDEX
             # Progress bar
             setTkProgressBar(st_progress_bar, value = 0.60, title = NULL, label = "Computing similarity index...")
             if ("similarity index" %in% similarity_criteria) {
+                all_is_completed_successfully_si <- FALSE
                 try({
                     score_si_matrix <- spectral_typer_score_similarity_index(spectra_database, spectra_test, filepath_database, filepath_test, class_list_library = database_folder_list, peaks_filtering_percentage_threshold = peaks_filtering_threshold_percent, low_intensity_percentage_threshold = low_intensity_peak_removal_percentage_threshold, low_intensity_threshold_method = low_intensity_peak_removal_threshold_method, tof_mode = tof_mode, spectra_format = spectra_format, spectra_path_output = spectra_path_output, score_only = score_only, allow_parallelization = allow_parallelization, score_threshold_values = score_threshold_values, tolerance_ppm = tolerance_ppm, peak_picking_mode = peak_picking_mode, signals_to_take = signals_to_take, peak_picking_SNR = SNR, peak_picking_algorithm = peak_picking_algorithm, peak_deisotoping = peak_deisotoping, peak_enveloping = peak_enveloping, spectral_alignment_algorithm = spectral_alignment_algorithm, spectral_alignment_reference = spectral_alignment_reference)
-                    all_is_completed_successfully <- append(all_is_completed_successfully, TRUE)
+                    all_is_completed_successfully_si <- TRUE
                 }, silent = TRUE)
+                all_is_completed_successfully <- append(all_is_completed_successfully, all_is_completed_successfully_si)
             }
             ############### INTENSITY
             # Progress bar
             setTkProgressBar(st_progress_bar, value = 0.80, title = NULL, label = "Comparing signal intensities...")
             if ("signal intensity" %in% similarity_criteria) {
+                all_is_completed_successfully_intensity <- FALSE
                 try({
                     score_intensity_matrix <- spectral_typer_score_signal_intensity(spectra_database, spectra_test, class_list_library = database_folder_list, database_spectral_variability_list = database_spectral_variability_list, test_spectral_variability_list = test_spectral_variability_list, signal_intensity_evaluation = signal_intensity_evaluation, peaks_filtering_percentage_threshold = peaks_filtering_threshold_percent, low_intensity_percentage_threshold = low_intensity_peak_removal_percentage_threshold, low_intensity_threshold_method = low_intensity_peak_removal_threshold_method, tof_mode = tof_mode, intensity_tolerance_percent_threshold = intensity_tolerance_percent, spectra_format = spectra_format, spectra_path_output = spectra_path_output, score_only = score_only, allow_parallelization = allow_parallelization, score_threshold_values = score_threshold_values, tolerance_ppm = tolerance_ppm, peak_picking_mode = peak_picking_mode, signals_to_take = signals_to_take, peak_picking_SNR = SNR, peak_picking_algorithm = peak_picking_algorithm, peak_deisotoping = peak_deisotoping, peak_enveloping = peak_enveloping, spectral_alignment_algorithm = spectral_alignment_algorithm, spectral_alignment_reference = spectral_alignment_reference)
-                    all_is_completed_successfully <- append(all_is_completed_successfully, TRUE)
+                    all_is_completed_successfully_intensity <- TRUE
                 }, silent = TRUE)
+                all_is_completed_successfully <- append(all_is_completed_successfully, all_is_completed_successfully_intensity)
             }
             ### Parameters matrices
             # Progress bar
