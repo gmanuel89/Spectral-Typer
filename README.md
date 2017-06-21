@@ -3,7 +3,7 @@
 ***
 
 ## Program version
-In order for this WIKI to be applicable, the version of the program must be equal to or higher than **2017.06.19.0**.
+In order for this WIKI to be applicable, the version of the program must be equal to or higher than **2017.06.21.0**.
 
 ***
 
@@ -24,11 +24,11 @@ Microsoft Windows 10 x64 - R 3.4.0
 ***
 
 ## Scope of the software
-The software imports two separate groups of mass spectra (stored in different file formats), performs spectral preprocessing onto the imported spectra (with different parameters), computes the peak picking and peak alignment onto the preprocessed spectra and perform comparisons between each spectrum of a group identified as "Sample" group and each spectrum of the group identified as "Database" group, in terms of number of signals and signal intensity.
+The software imports two separate groups of mass spectra (stored in different file formats), performs spectral preprocessing onto the imported spectra (with different parameters) and performs comparisons between each spectrum of a group identified as "Sample" group and each spectrum of the group identified as "Reference" group. In order to do so, the software performs at every iteration, for each reference-sample pair, peak picking, peak alignment and pairwise peaklist comparisons in terms of number of common signals and signal intensity evaluation.
 
-The software returns the results of the comparison as a matrix, in which each row is a sample (spectrum in the "Sample" group) and each column is a database entry (spectrum in the "Database" group). Each matrix entry corresponds to the similarity score, which generally is "YES" for a complete match, "NI" for partial match and "NO" for mismatch, in terms of score value reaching a defined threshold value. 
+The software returns the results of the comparison as a matrix, in which each row is a sample (spectrum in the "Sample" group) and each column is a Reference entry (spectrum in the "Reference" group). Each matrix entry corresponds to the similarity score, which generally is "YES" for a complete match, "NI" for partial match and "NO" for mismatch, in terms of score value reaching a defined threshold value. 
 
-Further data is displayed at the end of the matrix, such as the mass range and the values of the parameters used for the comparison analysis.
+Moreover, an additional matrix file is exported, containing all the parameters used for the analysis, such as the mass range and the values of the parameters used for the comparison analysis.
 
 ***
 
@@ -39,19 +39,29 @@ The software can import spectral files in different file formats: [Xmass](https:
 
 
 #### Organization of the data
-The spectral files should be organized in two separate folders, which must be provided to the software: the database folder and the sample folder.
+The spectral files should be organized in two separate folders, which must be provided to the software: the reference folder and the sample folder. The folder/file structure should strictly be as follows, with no additional folders/files, in order to avoid software crashes or misfunctioning.
 
-The database folder should contain one folder for each database entry, in such a way that all the spectra in each folder are averaged to yield one representative spectrum for each database entry. The spectra in the database subfolders can be further grouped in replicates by using another subfolder (each subfolder containing all the replicates for that condition).
+**One-level**: The reference folder should contain either free files (each file will constitute a reference entry) or one folder for each reference entry, containing all the replicates for that entry, in such a way that all the spectra in each folder are averaged to yield one representative spectrum for each reference entry.
+**Two-level**: The reference folder should contain one folder for each reference entry, in such a way that all the spectra in each folder are averaged to yield one representative spectrum for each reference entry. The spectra in the reference subfolders can be further grouped in replicates by using another subfolder (each subfolder containing all the replicates for that condition).
 
-The sample folder should contain one folder for each sample and each sample's folder should contain one subfolder for each condition, with all the replicates for that condition in the subfolder. In this way that all the spectra in each subfolder are averaged to yield one representative spectrum for each sample under the same condition. If there are no condition subfolders, each individual spectrum is considered as a different condition and no averaging is performed.
+**One-level**: The sample folder should contain either free files (each file will constitute a sample) or one folder for each sample, containing all the replicates for that entry, in such a way that all the spectra in each folder are averaged to yield one representative spectrum for each reference entry.
+**Two-level**: The sample folder should contain one folder for each sample, and each sample's folder should contain one subfolder for each condition, with all the replicates for that condition inside the subfolder. In this way that all the spectra in each subfolder are averaged to yield one representative spectrum for each sample under the same condition. If there are no condition subfolders, each individual spectrum is considered as a different condition and no averaging is performed.
 
-Moreover, spectral files can be saved, both for the database and for the samples, in order to evaluate the spectral preprocessing and the peak picking and alignment.
+Moreover, spectral files can be saved, both for the reference and for the samples, in order to evaluate the spectral preprocessing and the peak picking.
 
 
 #### Output data
-The software generates a CSV file corresponding to the result matrix, in which each row is a sample and each column is a database entry, with the similarity score for each pair.
+The software generates a file corresponding to the result matrix, in which each row is a sample and each column is a reference entry, with the similarity score for each pair. The file format can be either CSV or XLS/XLSX, in the latter case with cells automatically colored in green for YES, yellow for NI and red for NO.
 
-The spectra files are placed in a folder with the same name as the peaklist file, with two subfolders, one for the "Database" and one for the "Samples": if "MSD" is selected as the file format, one MSD file for each spectrum is generated, with the peaks embedded in the same file; if "TXT" is selected as the file format, two TXT files are generated, one forthe spectrum and one for the peaks.
+* **F (Fit)**: it is calculated as the proportion of the number of signals of the sample that are in the reference spectrum (common reference-sample signals / sample signals)
+* **RF (Retro-fit)**: it is calculated as the proportion of the number of signals of the reference that are in the sample spectrum (common reference-sample signals / reference signals)
+* **Correlation**: it displays the value of the Pearson's or Spearman's rho (correlation coefficient) between the signal intensities of the sample and the signal intensities of the reference
+* **p-value**: The p-value of the computed correlation
+* **ns**: Number of signals onto which the correlation is computed
+* **IntMtch**: it displays the percentage of the common sample-reference signals that have matching intensity, in terms of percent difference under a certain set threshold (|sample intensity - reference intensity| / reference intensity x 100)
+* **SI (Similarity Index)**: it displays the similarity index score, calculated as the sum of the product between the sample signal intensity and the reference signal intensity divided by the square root of the sum of the sample signal intensity squared and the reference signal intensity squared (Monigatti F, Berndt P. "Algorithm for accurate similarity measurements of peptide mass fingerprints and its application". J Am Soc Mass Spectrom. 2005 Jan;16(1):13-21.)
+
+The spectra files are placed in a folder with the same name as the peaklist file, with two subfolders, one for the "Reference" and one for the "Samples": if "MSD" is selected as the file format, one MSD file for each spectrum is generated, with the peaks embedded in the same file; if "TXT" is selected as the file format, two TXT files are generated, one for the spectrum and one for the peaks.
 
 ***
 
