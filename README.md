@@ -58,8 +58,8 @@ The software generates a file corresponding to the result matrix, in which each 
 * **Correlation**: it displays the value of the Pearson's or Spearman's rho (correlation coefficient) between the signal intensities of the sample and the signal intensities of the reference
 * **p-value**: The p-value of the computed correlation
 * **ns**: Number of signals onto which the correlation is computed
-* **IntMtch**: it displays the percentage of the common sample-reference signals that have matching intensity, in terms of percent difference under a certain set threshold (|sample intensity - reference intensity| / reference intensity x 100)
-* **SI (Similarity Index)**: it displays the similarity index score, calculated as the sum of the product between the sample signal intensity and the reference signal intensity divided by the square root of the sum of the sample signal intensity squared and the reference signal intensity squared (Monigatti F, Berndt P. "Algorithm for accurate similarity measurements of peptide mass fingerprints and its application". J Am Soc Mass Spectrom. 2005 Jan;16(1):13-21.)
+* **IntMtch**: it displays the percentage of the common sample-reference signals that have matching intensity, in terms of percent difference under a certain set threshold
+* **SI (Similarity Index)**: it displays the similarity index score
 
 The spectra files are placed in a folder with the same name as the peaklist file, with two subfolders, one for the "Reference" and one for the "Samples": if "MSD" is selected as the file format, one MSD file for each spectrum is generated, with the peaks embedded in the same file; if "TXT" is selected as the file format, two TXT files are generated, one for the spectrum and one for the peaks.
 
@@ -69,7 +69,7 @@ The spectra files are placed in a folder with the same name as the peaklist file
 
 * **Spectra format**: selects the format of the input spectral files (imzML, Xmass, TXT, CSV or MSD).
 
-* **Average replicates in the database**: selects if the replicates for each treatment should be averaged in the database, to generate one representative spectrum per treatment.
+* **Average replicates in the reference**: selects if the replicates for each treatment should be averaged in the reference, to generate one representative spectrum per treatment.
 
 * **Average replicates in the samples**: selects if the replicates for each treatment should be averaged in the samples, to generate one representative spectrum per treatment.
 
@@ -95,28 +95,28 @@ The spectra files are placed in a folder with the same name as the peaklist file
 
 * **Low-intensity peak removal threshold method**: selects the method for base peak identification, according to which the low-intensity peak removal is performed for each spectrum evaluating the intensity of the base peak of that spectrum ("element-wise") or the base peak of the whole spectral dataset ("whole").
 
-* **Intensity tolerance percent**: defines the tolerance (in %) to be used in "signal intensity" comparison to define two intensity-matching signals (between the sample and the database entry)
+* **Intensity tolerance percent**: defines the tolerance (in %) to be used in "signal intensity" comparison to define two intensity-matching signals (between the sample and the reference entry)
 
-* **Choose similarity criteria**: defines the way in which the signal intensity comparison between sample spectra and database entry spectra should be performed ("Correlation", "Hierarchical Clustering Analysis - HCA", "Signal intensity", "Similarity index").
-    * **_Correlation_**: searches for a similar trend in the signal intensity between the sample and the database entry by computing the "Pearson's correlation" (estimating Pearson's rho) or the "Spearman's rank-order correlation" (estimating Spearman's rho).
-    * **_HCA_**: computes the spectral similarity by measuring the distance between the sample and the database entry.
+* **Choose similarity criteria**: defines the way in which the signal intensity comparison between sample spectra and reference entry spectra should be performed ("Correlation", "Hierarchical Clustering Analysis - HCA", "Signal intensity", "Similarity index").
+    * **_Correlation_**: searches for a similar trend in the signal intensity between the sample and the reference entry by computing the "Pearson's correlation" (estimating Pearson's rho) or the "Spearman's rank-order correlation" (estimating Spearman's rho).
+    * **_HCA_**: computes the spectral similarity by measuring the distance between the sample and the reference entry.
         * *Euclidean*: Usual distance between the two vectors (2-norm aka L2-norm : the square root of the sum of the differences squared between two samples (sqrt(sum((x_i - y_i)^2))).
         * *Maximum*: Maximum distance between two components of x and y (supremum norm).
         * *Manhattan*: Absolute distance between the two vectors (1-norm aka L-1 norm).
         * *Canberra*: The sum of the ratios between the absolute value of the sum and the absolute values of the differences between two vectors (sum(|x_i - y_i| / |x_i + y_i|)).
         * *Binary (asymmetric binary)*: The vectors are regarded as binary bits, so non-zero elements are ‘on’ and zero elements are ‘off’. The distance is the proportion of bits in which only one is on amongst those in which at least one is on.
         * *Minkowski*: The p-norm, the pth root of the sum of the pth powers of the differences of the components.
-    * **_Signal intensity_**: checks if the intensity of the common signals (between the sample and the database entry) is similar by evaluating the difference in terms of percentage of intensity (tolerance %). Two signals are identified as matching when their difference in intensity is within a certain tolerance percentage value.
+    * **_Signal intensity_**: checks if the intensity of the common signals (between the sample and the reference entry) is similar by evaluating the difference in terms of percentage of intensity (tolerance %). Two signals are identified as matching when their difference in intensity is within a certain tolerance percentage value. (|sample intensity - reference intensity| / reference intensity x 100)
         * *Fixed percentage*: The tolerance value is fixed for every signal across the analysis (defined by the user).
-        * *Peak-wise adjusted percentage*: The tolerance value is adjusted for each peak in the comparison between sample and database entry, the adjustment corresponding to the coefficient of variation of that signal intensity computed over replicates of the database entry and the sample. The signal is considered matched if the intervals constituted by the intensity value +/- the standard deviation both for the sample and the database entry overlap.
-        * *Average coefficient of variation*: The tolerance value is adjusted for comparison between sample and database entry, the adjustment corresponding to the average coefficient of variation of signal intensities computed over replicates of the database entry.
-    * **_Similarity index_**: computes the similarity index between the sample and the database entry by employing signal intensities.
+        * *Peak-wise adjusted percentage*: The tolerance value is adjusted for each peak in the comparison between sample and reference entry, the adjustment corresponding to the coefficient of variation of that signal intensity computed over replicates of the reference entry and the sample. The signal is considered matched if the intervals constituted by the intensity value +/- the standard deviation both for the sample and the reference entry overlap.
+        * *Average coefficient of variation*: The tolerance value is adjusted for comparison between sample and reference entry, the adjustment corresponding to the average coefficient of variation of signal intensities computed over replicates of the reference entry.
+    * **_Similarity index_**: computes the similarity index between the sample and the reference entry by employing signal intensities. It is calculated as the sum of the product between the sample signal intensity and the reference signal intensity divided by the square root of the sum of the sample signal intensity squared and the reference signal intensity squared (Monigatti F, Berndt P. "Algorithm for accurate similarity measurements of peptide mass fingerprints and its application". J Am Soc Mass Spectrom. 2005 Jan;16(1):13-21.)
 
 * **Score threshold values**: defines the two values to be used to define the overall score of the spectral comparison ("YES", "NI", "NO").
 
 * **Allow parallelization**: enables the parallel computation (multi-CPU computation).
 
-* **Browse database folders...**: select the folder in which all the spectra to be used as "Database" are stored.
+* **Browse reference folders...**: select the folder in which all the spectra to be used as "Reference" are stored.
 
 * **Browse samples folders...**: select the folder in which all the spectra to be used as "Samples" are stored.
 
@@ -141,16 +141,16 @@ The spectra files are placed in a folder with the same name as the peaklist file
         * *Median*: It divides the intensities of the spectrum by the median of all the intensity values of the spectrum itself. It has been proved to be the most robust normalization method.
     * **_Align spectra_**: selects if alignment of spectra should be performed, by generating a calibration curve ("cubic", "quadratic", "linear", "lowess") employing an automatically generated peaklist ("auto") as reference or by taking the peaks of the "average spectrum" or of the "skyline spectrum" as reference.
     * **_Preprocess spectra in packages of_**: defines the number of spectra to be taken at a time for preprocessing, when the computer resources are limited (taking all the spectra in RAM could cause the computer to freeze).
-    * **_Tolerance (in ppm)_**: defines the tolerance (in ppm, parts per million) for the spectral alignment, peak alignment and database-sample signal match. For linear TOF mode the tolerance should be set to 1000 ppm (0.1%, 4 Da at 4000 Da), while for reflectron TOF mode the tolerance should be set to 100 ppm (0.01%, 0.2 Da at 2000 Da).
+    * **_Tolerance (in ppm)_**: defines the tolerance (in ppm, parts per million) for the spectral alignment, peak alignment and reference-sample signal match. For linear TOF mode the tolerance should be set to 1000 ppm (0.1%, 4 Da at 4000 Da), while for reflectron TOF mode the tolerance should be set to 100 ppm (0.01%, 0.2 Da at 2000 Da).
     * **_Commit preprocessing_**: stores the preprocessing parameters to be applied for analysis.
 
 * **Import and preprocess spectra...**: imports the spectra and computes preprocessing (according to the specified parameters), averaging and alignment. It also estimates the spectral variability in terms of coefficient of variation of signal intensity across the replicates for each signal and average coefficient of variation of signal intensity, to be used for adjusting the tolerance parameters in th signal intensity comparison.
 
-* **Run Spectral Typer**: runs the Spectral Typer software.
+* **Run Spectral Typer**: runs the Spectral Typer software. For each sample, for each reference entry, the spectral alignment is performed only if selected by the user, the peak picking and alignment is performed and the similarity parameters are computed.
 
-* **Dump the database**: stores the database spectra and the signal variability estimation in an RData file, to be imported in the future for further use, skipping the import and the preprocessing on the database spectra.
+* **Dump the database**: stores the reference spectra and the signal variability estimation in an RData file, to be imported in the future for further use, skipping the import and the preprocessing on the reference spectra.
 
-* **Dump spectral files...**: generates a folder (named as the peaklist matrix file) in which all the spectral files are saved (MSD or TXT) and organized in two subfolders (one for the "Database spectra" and one for the "Sample spectra").
+* **Dump spectral files...**: generates a folder (named as the peaklist matrix file) in which all the spectral files are saved (MSD or TXT) and organized in two subfolders (one for the "Reference spectra" and one for the "Sample spectra").
 
 * **Quit**: close the program and the R session.
 
@@ -161,12 +161,16 @@ The spectra files are placed in a folder with the same name as the peaklist file
 #### Organization of the data
 Example of folder hierarchy:
 
-* DATABASE
-    * Database entry sample folders/Treatment folders/Sample replicates/Spectrum coordinates/1/1SLin/Spectrum data
-    * Class folders - Entry sample folders/Sample imzML,TXT,CSV,MSD files
-    * Sample imzML,TXT,CSV,MSD files
+* REFERENCE
+    * One-level
+        * Spectral files (imzML,TXT,CSV,MSD files or folder containing Bruker's Xmass spectrum data)
+        * Class-Entry folders/Replicate spectral files (imzML,TXT,CSV,MSD files or folder containing Bruker's Xmass spectrum data)
+    * Two-level
+        * Class-Entry folders/Treatment folders/Replicate spectral files (imzML,TXT,CSV,MSD files or folder containing Bruker's Xmass spectrum data)
 
 * SAMPLES
-    * Sample folders/Treatment folders/Spectra replicates/Spectrum coordinates/1/1SLin/Spectrum data
-    * Sample folders/Treatment folders/Sample imzML,TXT,CSV,MSD files
-    * Sample imzML,TXT,CSV,MSD files
+    * One-level
+        * Spectral files (imzML,TXT,CSV,MSD files or folder containing Bruker's Xmass spectrum data)
+    * Two-level
+        * Sample folders/Treatment folders/Replicate spectral files (imzML,TXT,CSV,MSD files or folder containing Bruker's Xmass spectrum data)
+    
