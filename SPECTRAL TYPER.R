@@ -5,7 +5,7 @@ rm(list = ls())
 
 functions_mass_spectrometry <- function() {
     
-    ################## FUNCTIONS - MASS SPECTROMETRY 2017.06.20 ################
+    ################## FUNCTIONS - MASS SPECTROMETRY 2017.06.21 ################
     # Each function is assigned with <<- instead of <-, so when called by the huge functions_mass_spectrometry() function they go in the global environment, like as if the script was directly sourced from the file.
     
     
@@ -681,8 +681,8 @@ functions_mass_spectrometry <- function() {
     remove_low_intensity_peaks <<- function(peaks, low_intensity_peak_removal_threshold_percent = 1, low_intensity_peak_removal_threshold_method = "element-wise", allow_parallelization = FALSE) {
         ### Load the required libraries
         require(parallel)
-        require(MALDIquant)
         require(XML)
+        require(MALDIquant)
         ### Fix the percentage value
         if (low_intensity_peak_removal_threshold_percent < 0) {
             low_intensity_peak_removal_threshold_percent <- 0
@@ -1000,8 +1000,8 @@ functions_mass_spectrometry <- function() {
     # It returns a NULL value if the peak statistics cannot be performed.
     peak_statistics <<- function(spectra, peaks = NULL, SNR = 3, peak_picking_algorithm = "SuperSmoother", class_list = NULL, class_in_file_path = TRUE, tof_mode = "linear", spectra_format = "imzML", exclude_spectra_without_peak = FALSE, alignment_iterations = 5, peak_filtering_frequency_threshold_percent = 25, remove_outliers = TRUE, low_intensity_peak_removal_threshold_percent = 0, low_intensity_peak_removal_threshold_method = "element_wise", tolerance_ppm = NULL) {
         ########## Load the required libraries
-        require(MALDIquant)
         require(XML)
+        require(MALDIquant)
         require(stats)
         ########## Rename the trim function
         trim_spectra <- get(x = "trim", pos = "package:MALDIquant")
@@ -1670,9 +1670,9 @@ functions_mass_spectrometry <- function() {
     # The function imports the spectral files from the filepath specified. The spectral type can be specified, along with the mass range to cut the spectra during the import phase. The function automatically transforms the backslash in the forward slash on Windows and replace the list names (and the sample name if needed) for a better identification of spectra. It returns NULL if there are no spectra to be imported.
     import_spectra <<- function(filepath, spectra_format = "imzML", mass_range = NULL, allow_parallelization = FALSE, spectral_names = "name", replace_sample_name_field = TRUE, remove_empty_spectra = TRUE) {
         ### Load the packages
+        require(XML)
         require(MALDIquant)
         require(MALDIquantForeign)
-        require(XML)
         require(parallel)
         ### Initialize the spectra variable as NULL
         spectra <- NULL
@@ -1850,8 +1850,8 @@ functions_mass_spectrometry <- function() {
     #################################################### SPECTRA GROUPING (CLASSES)
     # The functions takes a list of spectra (MALDIquant) and generates a list of representative spectra, averaging spectra according to the class they belong to, generating one average spectrum per class.
     group_spectra_class <<- function(spectra, class_list, grouping_method = "mean", spectra_format = "imzML", class_in_file_path = TRUE, class_in_file_name = FALSE, tof_mode = "linear", preprocessing_parameters = list(mass_range = NULL, transformation_algorithm = NULL, smoothing_algorithm = "SavitzkyGolay", smoothing_strength = "medium", baseline_subtraction_algorithm = "SNIP", baseline_subtraction_algorithm_parameter = 100, normalization_algorithm = "TIC", normalization_mass_range = NULL, preprocess_spectra_in_packages_of = 0, spectral_alignment_algorithm = "cubic", spectral_alignment_reference = "average spectrum"), allow_parallelization = FALSE) {
-        require(MALDIquant)
         require(XML)
+        require(MALDIquant)
         ##### Spectral preprocessing
         if (!is.null(preprocessing_parameters) && is.list(preprocessing_parameters) && length(preprocessing_parameters) > 0) {
             spectra <- preprocess_spectra(spectra, tof_mode = tof_mode, preprocessing_parameters = preprocessing_parameters, allow_parallelization = allow_parallelization)
@@ -2093,8 +2093,8 @@ functions_mass_spectrometry <- function() {
     # Plot spectra in a nicer way than the simple plot function. It can be applied to both sigle spectra or a list of spectra, and it will return a single plot object or a list of plot objects.
     plot_spectra <<- function(spectra, mass_range = NULL) {
         ### Load the packages
-        require(MALDIquant)
         require(XML)
+        require(MALDIquant)
         require(ggplot2)
         ### Rename the function
         trim_spectra <- get(x = "trim", pos = "package:MALDIquant")
@@ -2136,8 +2136,8 @@ functions_mass_spectrometry <- function() {
     # If an algorithm is set to NULL, that preprocessing step will not be performed.
     preprocess_spectra <<- function(spectra, tof_mode = "linear", preprocessing_parameters = list(mass_range = NULL, transformation_algorithm = NULL, smoothing_algorithm = "SavitzkyGolay", smoothing_strength = "medium", baseline_subtraction_algorithm = "SNIP", baseline_subtraction_algorithm_parameter = 100, normalization_algorithm = "TIC", normalization_mass_range = NULL, preprocess_spectra_in_packages_of = 0, spectral_alignment_algorithm = NULL, spectral_alignment_reference = "average_spectrum"), allow_parallelization = FALSE, tolerance_ppm = NULL) {
         ##### Load the required libraries
-        require(MALDIquant)
         require(XML)
+        require(MALDIquant)
         require(parallel)
         ##### Rename the trim function
         trim_spectra <- get(x = "trim", pos = "package:MALDIquant")
@@ -2468,8 +2468,8 @@ functions_mass_spectrometry <- function() {
     # This function takes a list of spectra (MALDIquant) as input and returns the average spectrum of the provided dataset with bars onto the peaks, after calculating the standard deviation.
     average_spectrum_bars <<- function(spectra, SNR = 5, peak_picking_algorithm = "SuperSmoother", tof_mode = "linear", tolerance_ppm = NULL, mass_range_plot = c(4000,15000), graph_title = "Spectrum", average_spectrum_color = "black", peak_points = "yes", points_color = "red", bar_width = 40, bar_color = "blue") {
         # Load the required libraries
-        require(MALDIquant)
         require(XML)
+        require(MALDIquant)
         # Rename the trim function
         trim_spectra <- get(x = "trim", pos = "package:MALDIquant")
         # Determine the tolerance in PPM
@@ -2552,8 +2552,8 @@ functions_mass_spectrometry <- function() {
     most_intense_signals <<- function(spectra, signals_to_take = 20, tof_mode = "linear", peak_picking_algorithm = "SuperSmoother", allow_parallelization = FALSE, deisotope_peaklist = FALSE, envelope_peaklist = FALSE) {
         # Load the required libraries
         require(parallel)
-        require(MALDIquant)
         require(XML)
+        require(MALDIquant)
         # Rename the trim function
         trim_spectra <- get(x = "trim", pos = "package:MALDIquant")
         ####################################################### PICKING FUNCTION
@@ -2653,10 +2653,10 @@ functions_mass_spectrometry <- function() {
     ############################################# AVERAGE THE REPLICATES (BY FOLDER)
     # This function averages the spectra contained in the same folder (more suitable for brukerflex format).
     # The function automatically handles missing spectra: sometimes the MALDIquantForeign function does not import spectra because of the calibration, so th spectral files read from the folder and the spectra in the R list are not the same... So the unique spectral names (folder + treatment subfolders) are established on the folder/spectra list, then they are matched to the elements in the list, which have their name replaced... Finally the R list's (unique) names are usedfor averaging.
-    average_replicates_by_folder <<- function(spectra, folder, spectra_format = "brukerflex", averaging_method = "mean") {
+    average_replicates_by_folder <<- function(spectra, folder, spectra_format = "fid", averaging_method = "mean") {
         # Load the required libraries
-        require(MALDIquant)
         require(XML)
+        require(MALDIquant)
         ### Do it only of there are more than one spectra
         if (isMassSpectrumList(spectra)) {
             # Rename the trim function
@@ -2698,11 +2698,29 @@ functions_mass_spectrometry <- function() {
                     }
                 }
             } else if (spectra_format == "imzML" || spectra_format == "txt" || spectra_format == "csv" || spectra_format == "msd") {
-                unique_sample_name <- character()
-                for (f in 1:length(spectra)) {
-                    unique_sample_name <- append(unique_sample_name, spectra[[f]]@metaData$file[1])
+                # Split the path into individual folders (list, each element is a vector with the path splitted for that spectrum)
+                spectra_files_splitted <- list()
+                # Split the paths into folders
+                for (f in 1:length(spectra_files)) {
+                    spectra_files_splitted[f] <- strsplit(spectra_files[f], "/")
                 }
-                spectra_names <- unique_sample_name
+                # Retrieve the sample name (the first folder)
+                sample_name <- character()
+                for (f in 1:length(spectra_files_splitted)) {
+                    sample_name <- append(sample_name, spectra_files_splitted[[f]][1])
+                }
+                unique_sample_name <- unique(sample_name)
+                
+                ### Replace the name in the spectra (match the file path with the unique sample name: the match is very strong because by matching also the "/" the entire folder name must be the same... So even if a folder name is the same as another but with addition, the match does not occur because of the "/", and with it the entire folder must be matched)
+                ### Generate the list of spectral names (from the spectra in the list, because the spectra files does not necessarily match the spectra in the R list, because not every file is readable)
+                spectra_names <- character()
+                for (s in 1:length(spectra)) {
+                    for (f in 1:length(unique_sample_name)) {
+                        if (length(grep(paste0("/", unique_sample_name[f], "/"),  spectra[[s]]@metaData$file[1], fixed = TRUE)) > 0) {
+                            spectra_names <- append(spectra_names, unique_sample_name[f])
+                        }
+                    }
+                }
             }
             # Average the mass spectra, grouping them according to the sample_vector
             if (length(spectra_names) == length(spectra)) {
@@ -2749,8 +2767,8 @@ functions_mass_spectrometry <- function() {
             deisotope_peaklist <- TRUE
         }
         ########## Load the required libraries
-        require(MALDIquant)
         require(XML)
+        require(MALDIquant)
         require(parallel)
         ##### TOF-MODE
         if (tof_mode == "linear") {
@@ -2843,8 +2861,8 @@ functions_mass_spectrometry <- function() {
     # This function takes a list of spectra (MALDIquant) and computes the normaliziations which are not in the MALDIquant package (e.g. RMS). Parallel computing is not implemented, since it will be incorporated in the preprocess_spectra function, whch already employs parallelization.
     normalize_spectra <<- function(spectra, normalization_algorithm = "TIC", normalization_mass_range = NULL) {
         # Load required packages
-        require(MALDIquant)
         require(XML)
+        require(MALDIquant)
         # Function for lapply (x = spectrum)
         normalization_subfunction <- function(x, normalization_algorithm, normalization_mass_range) {
             if (!is.null(normalization_algorithm)) {
@@ -2900,9 +2918,9 @@ functions_mass_spectrometry <- function() {
     # This function takes a list of peaks (MALDIquant) and returns the same peak list without isotopic clusters, only monoisotopic peaks.
     deisotope_peaks <<- function(peaks, pattern_model_correlation = 0.95, isotopic_tolerance = 10^(-4), isotope_pattern_distance = 1.00235, isotopic_pattern_size = 3L:10L, allow_parallelization = FALSE) {
         ##### Load the required packages
+        require(XML)
         require(MALDIquant)
         require(parallel)
-        require(XML)
         ##### Multiple peaks
         if (isMassPeaksList(peaks)) {
             ##### Multiple cores
@@ -2976,9 +2994,9 @@ functions_mass_spectrometry <- function() {
     # This function takes a list of peaks (MALDIquant) and returns the same peak list without isotopic clusters, only the most intense peaks in the clusters.
     envelope_peaks <<- function(peaks, allow_parallelization = FALSE) {
         ##### Load the required packages
+        require(XML)
         require(MALDIquant)
         require(parallel)
-        require(XML)
         ##### Function for lapply
         envelope_peaklist_subfunction <- function(peaks) {
             # Extract the m/z and intensity values
@@ -3105,8 +3123,8 @@ functions_mass_spectrometry <- function() {
         ########## Align only if there are many peaklists
         if (isMassPeaksList(peaks)) {
             ##### Load the required libraries
-            require(MALDIquant)
             require(XML)
+            require(MALDIquant)
             require(parallel)
             ##### Rename the trim function
             trim_spectra <- get(x = "trim", pos = "package:MALDIquant")
@@ -4011,9 +4029,9 @@ functions_mass_spectrometry <- function() {
     # It outputs NULL values if the classification cannot be performed due to incompatibilities between the model features and the spectral features.
     spectral_classification <<- function(spectra_path, filepath_R = NULL, model_list, model_performance_parameter_list = NULL, classification_mode = c("pixel", "profile"), peak_picking_algorithm = "SuperSmoother", deisotope_peaklist = FALSE, preprocessing_parameters = list(mass_range = c(4000,15000), transformation_algorithm = NULL, smoothing_algorithm = "SavitzkyGolay", smoothing_strength = "medium", baseline_subtraction_algorithm = "SNIP", baseline_subtraction_algorithm_parameter = 100, normalization_algorithm = "TIC", normalization_mass_range = NULL, preprocess_spectra_in_packages_of = 0, spectral_alignment_algorithm = NULL), tof_mode = "linear", allow_parallelization = FALSE, decision_method_ensemble = c("unweighted majority", "class assignment probabilities", "bayesian probabilities"), pixel_grouping = c("single", "moving window average", "graph", "hca"), moving_window_size = 5, number_of_hca_nodes = 10, number_of_spectra_partitions_graph = 1, partitioning_method_graph = "space", correlation_method_for_adjacency_matrix = "pearson", correlation_threshold_for_adjacency_matrix = 0.95, pvalue_threshold_for_adjacency_matrix = 0.05, max_GA_generations = 10, iterations_with_no_change_GA = 5, seed = 12345, classification_mode_graph = c("average spectra", "single spectra clique"), features_to_use_for_graph = c("all", "model"), plot_figures = TRUE, plot_graphs = TRUE, plot_legends = c("sample name", "legend", "plot name"), progress_bar = NULL, tolerance_ppm = NULL) {
         ### Install and load the required packages
+        require(XML)
         require(MALDIquant)
         require(MALDIquantForeign)
-        require(XML)
         require(stats)
         require(parallel)
         require(kernlab)
@@ -5906,8 +5924,8 @@ functions_mass_spectrometry <- function() {
     # Each sample gets compared with all the entries in the database, simultaneously.
     spectral_typer_score_hierarchical_distance <<- function(spectra_database, spectra_test, class_list_library = NULL, peaks_filtering_percentage_threshold = 5, low_intensity_percentage_threshold = 0, low_intensity_threshold_method = "element-wise", tof_mode = "linear", spectra_path_output = TRUE, score_only = TRUE, spectra_format = "fid", normalize_distances = TRUE, normalization_method = "sum", hierarchical_distance_method = "euclidean", tolerance_ppm = NULL, allow_parallelization = FALSE, peak_picking_mode = "all", signals_to_take = 20, peak_picking_SNR = 3, peak_picking_algorithm = "SuperSmoother", peak_deisotoping = FALSE, peak_enveloping = FALSE, spectral_alignment_algorithm = NULL, spectral_alignment_reference = NULL) {
         # Load the required libraries
-        require(MALDIquant)
         require(XML)
+        require(MALDIquant)
         require(stats)
         require(ggplot2)
         require(ggdendro)
@@ -6095,8 +6113,8 @@ functions_mass_spectrometry <- function() {
     # Each sample gets compared with each entry in the database, separately.
     # Parallel implemented.
     spectral_typer_score_correlation_matrix <<- function(spectra_database, spectra_test, filepath_database, filepath_test, class_list_library = NULL, peaks_filtering_percentage_threshold = 5, low_intensity_percentage_threshold = 0, low_intensity_threshold_method = "element-wise", tof_mode = "linear", correlation_method = "spearman", intensity_correction_coefficient = 1, spectra_format = "fid", spectra_path_output = TRUE, score_only = FALSE, allow_parallelization = FALSE, score_threshold_values = c(1.7, 2), tolerance_ppm = NULL, peak_picking_mode = "all", signals_to_take = 20, peak_picking_SNR = 3, peak_picking_algorithm = "SuperSmoother", peak_deisotoping = FALSE, peak_enveloping = FALSE, spectral_alignment_algorithm = NULL, spectral_alignment_reference = NULL) {
-        require(MALDIquant)
         require(XML)
+        require(MALDIquant)
         require(corrplot)
         require(weights)
         require(stats)
@@ -6500,9 +6518,9 @@ functions_mass_spectrometry <- function() {
     # Parallel implemented.
     spectral_typer_score_signal_intensity <<- function(spectra_database, spectra_test, class_list_library = NULL, database_spectral_variability_list = NULL, test_spectral_variability_list = NULL, signal_intensity_evaluation = c("fixed percentage", "peak-wise adjusted percentage", "average coefficient of variation"), peaks_filtering_percentage_threshold = 5, low_intensity_percentage_threshold = 0, low_intensity_threshold_method = "element-wise", tof_mode = "linear", intensity_tolerance_percent_threshold = 50, spectra_format = "fid", spectra_path_output = TRUE, score_only = TRUE, allow_parallelization = FALSE, score_threshold_values = c(1.7, 2), tolerance_ppm = NULL, peak_picking_mode = "all", signals_to_take = 20, peak_picking_SNR = 3, peak_picking_algorithm = "SuperSmoother", peak_deisotoping = FALSE, peak_enveloping = FALSE, spectral_alignment_algorithm = NULL, spectral_alignment_reference = NULL) {
         # Load the required libraries
+        require(XML)
         require(MALDIquant)
         require(parallel)
-        require(XML)
         ### Fix the score intensity threshold values
         if (!is.numeric(score_threshold_values) || (is.numeric(score_threshold_values) && length(score_threshold_values) != 2)) {
             score_threshold_values <- c(1.7, 2)
@@ -6964,8 +6982,8 @@ functions_mass_spectrometry <- function() {
                 score_threshold_values[2] <- 3
             }
         }
-        require(MALDIquant)
         require(XML)
+        require(MALDIquant)
         require(stats)
         require(parallel)
         # Rename the trim function
@@ -7432,8 +7450,8 @@ functions_mass_spectrometry <- function() {
     # This function is suited for aligning the spectral features (of an unknown dataset) with the model features.
     generate_custom_intensity_matrix <<- function(spectra, custom_feature_vector = NULL, tof_mode = "linear", preprocessing_parameters = list(mass_range = c(800,3000), transformation_algorithm = NULL, smoothing_algorithm = NULL, smoothing_strength = "medium", baseline_subtraction_algorithm = "SNIP", baseline_subtraction_algorithm_parameter = 100, normalization_algorithm = "TIC", normalization_mass_range = NULL, preprocess_spectra_in_packages_of = 0, spectral_alignment_algorithm = NULL), peak_picking_algorithm = "SuperSmoother", peak_picking_SNR = 5, peak_filtering_frequency_threshold_percent = 5, low_intensity_peak_removal_threshold_percent = 0, low_intensity_peak_removal_threshold_method = "element-wise", allow_parallelization = FALSE, deisotope_peaklist = FALSE, tolerance_ppm = NULL) {
         ### Install the required packages
-        require(MALDIquant)
         require(XML)
+        require(MALDIquant)
         # Rename the trim function
         trim_spectra <- get(x = "trim", pos = "package:MALDIquant")
         ### Define the tolerance
@@ -7618,8 +7636,8 @@ functions_mass_spectrometry <- function() {
     # If space is selected, the spectral list is rearranged along the widest dimension: for example, if X is the widest dimension, the spectra are rearranged as X1,Y1 X2,Y1 X3,Y1 and so on... If the spectral list does not contain spatial coordinates (it is not an imaging dataset), nothing is performedin terms of space.
     rearrange_spectral_dataset <<- function(spectra, rearranging_method = c("space","random"), seed = NULL) {
         ##### Install and load the required packages
-        require(MALDIquant)
         require(XML)
+        require(MALDIquant)
         ########## Do everything only if it is a list of spectra
         if (isMassSpectrumList(spectra)) {
             #################### SPACE
@@ -7714,8 +7732,8 @@ functions_mass_spectrometry <- function() {
     # The function takes a list of spectra and partitions it in a certain number of subsets (defined by the user) on spatial, random or hierarchical basis. It returns a list of sub-lists of spectra.
     partition_spectral_dataset <<- function(spectra, partitioning_method = c("space","random", "hca"), number_of_partitions = 3, seed = NULL, tof_mode = "reflectron") {
         ##### Install and load the required packages
-        require(MALDIquant)
         require(XML)
+        require(MALDIquant)
         ########## Do everything only if it is a list of spectra
         if (isMassSpectrumList(spectra)) {
             #################### SPACE
@@ -8095,8 +8113,8 @@ functions_mass_spectrometry <- function() {
     # The function takes an adjacency matrix as input, converts it into a graph (using the 'igraph' package) and runs the genetic algorithm on the chromosome population generated by the graph nodes. The aim of the genetic algorithm is to identify and isolate a set of highly correlated observations (clique) from the rest of the dataset (independent set) by performing vertex and triangle mutations (free low-grade vertices and bind high-grade vertices) and selecting (fitness function) the population with a minimal change compared to the original, in such a way that the maximum amount of information is preserved.
     genetic_algorithm_graph <<- function(input_adjacency_matrix, graph_type = "Preferential", vertex_mutation = TRUE, triangle_mutation = TRUE, allow_parallelization = FALSE, number_of_high_degree_vertices_for_subgraph = 0, vertices_not_in_induced_subgraph = c("independent", "reassigned"), vertex_independency_threshold = 200, iterations_with_no_change = 5, max_GA_generations = 10, seed = 12345) {
         ##### Install and load the required packages
-        require(MALDIquant)
         require(XML)
+        require(MALDIquant)
         require(parallel)
         require(igraph)
         require(GA)
@@ -8341,8 +8359,8 @@ functions_mass_spectrometry <- function() {
     # The function takes the result of the genetic algorithm optimization (the genetic model object) and the list of spectra used to generate the adjacency matrix for the function 'genetic_algorithm_graph', it extracts the final chromosome (generated after the optimization) and it mirrors it onto the list of spectra, so that the output is a list of spectra belonging to the clique and a list of spectra belonging to the independent set. In addition, a list of spectra for plotting purposes is returned.
     from_GA_to_MS <<- function(final_chromosome_GA, spectra, spectra_format = "imzML") {
         ##### Install and load the required packages
-        require(MALDIquant)
         require(XML)
+        require(MALDIquant)
         require(parallel)
         require(igraph)
         require(GA)
@@ -8419,9 +8437,9 @@ functions_mass_spectrometry <- function() {
     # It returns a NULL value if the segmentation is not possible due to incompatibilities between the features in the dataset and the ones provided by the model.
     graph_MSI_segmentation <<- function(filepath_imzml, preprocessing_parameters = list(mass_range = c(800,3000), transformation_algorithm = NULL, smoothing_algorithm = NULL, smoothing_strength = "medium", baseline_subtraction_algorithm = "SNIP", baseline_subtraction_algorithm_parameter = 200, normalization_algorithm = "TIC", normalization_mass_range = NULL, process_spectra_in_packages_of = 0, spectral_alignment_algorithm = NULL), allow_parallelization = FALSE, peak_picking_algorithm = "SuperSmoother", deisotope_peaklist = FALSE, SNR = 5, tof_mode = "reflectron", peak_filtering_frequency_threshold_percent = 5, low_intensity_peak_removal_threshold_percent = 0, low_intensity_peak_removal_threshold_method = "element-wise", custom_feature_vector = NULL, correlation_method_for_adjacency_matrix = "pearson", correlation_threshold_for_adjacency_matrix = 0.90, pvalue_threshold_for_adjacency_matrix = 0.05, number_of_high_degree_vertices_for_subgraph = 0, vertices_not_in_induced_subgraph = c("independent", "reassigned"), max_GA_generations = 10, iterations_with_no_change = 5, plot_figures = TRUE, plot_graphs = TRUE, plot_legends = c("sample name", "legend", "plot name"), number_of_spectra_partitions = 1, partitioning_method = "space", seed = 12345, spectra_format = "imzML") {
         # Install and load the required packages
+        require(XML)
         require(MALDIquantForeign)
         require(MALDIquant)
-        require(XML)
         require(parallel)
         require(caret)
         require(pls)
@@ -8666,6 +8684,7 @@ functions_mass_spectrometry <- function() {
 
 
 
+
 ##########################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################
 
 
@@ -8705,7 +8724,7 @@ spectral_typer <- function() {
     
     
     ### Program version (Specified by the program writer!!!!)
-    R_script_version <- "2017.06.20.3"
+    R_script_version <- "2017.06.21.0"
     ### Force update (in case something goes wrong after an update, when checking for updates and reading the variable force_update, the script can automatically download the latest working version, even if the rest of the script is corrupted, because it is the first thing that reads)
     force_update <- FALSE
     ### GitHub URL where the R file is
@@ -8722,7 +8741,7 @@ spectral_typer <- function() {
     
     
     ############## INSTALL AND LOAD THE REQUIRED PACKAGES
-    install_and_load_required_packages(c("tcltk", "ggplot2", "ggdendro", "MALDIquant", "MALDIquantForeign", "XML", "weights", "stats", "foreach", "parallel", "corrplot", "weights"), repository = "http://cran.mirror.garr.it/mirrors/CRAN/", update_packages = TRUE, print_messages = TRUE)
+    install_and_load_required_packages(c("tcltk", "ggplot2", "ggdendro", "XML", "MALDIquant", "MALDIquantForeign", "weights", "stats", "foreach", "parallel", "corrplot", "weights"), repository = "http://cran.mirror.garr.it/mirrors/CRAN/", update_packages = TRUE, print_messages = TRUE)
     if (Sys.info()[1] == "Windows") {
         install_and_load_required_packages("doParallel")
     } else {
@@ -11227,4 +11246,3 @@ functions_mass_spectrometry()
 
 ### Run the function
 spectral_typer()
-
