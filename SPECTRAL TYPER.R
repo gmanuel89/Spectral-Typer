@@ -7086,10 +7086,10 @@ functions_mass_spectrometry <- function() {
                 spectrum_reference_x <- x[["spectra_reference"]][[db]]
                 spectrum_sample_x <- x[["spectrum_sample"]]
                 ## Align spectra
+                spectra_all <- list()
+                spectra_all[["spectrum_reference_x"]] <- spectrum_reference_x
+                spectra_all[["spectrum_sample_x"]] <- spectrum_sample_x
                 if (!is.null(spectral_alignment_algorithm)) {
-                    spectra_all <- list()
-                    spectra_all[["spectrum_reference_x"]] <- spectrum_reference_x
-                    spectra_all[["spectrum_sample_x"]] <- spectrum_sample_x
                     spectra_all <- align_spectra(spectra = spectra_all, spectral_alignment_algorithm = spectral_alignment_algorithm, spectral_alignment_reference = spectral_alignment_reference, tof_mode = tof_mode, deisotope_peaklist = peak_deisotoping, envelope_peaklist = peak_enveloping, tolerance_ppm = tolerance_ppm)
                     spectrum_reference_x <- spectra_all[["spectrum_reference_x"]]
                     spectrum_sample_x <- spectra_all[["spectrum_sample_x"]]
@@ -8738,7 +8738,7 @@ spectral_typer <- function() {
     
     
     ### Program version (Specified by the program writer!!!!)
-    R_script_version <- "2017.06.22.0"
+    R_script_version <- "2017.06.22.1"
     ### Force update (in case something goes wrong after an update, when checking for updates and reading the variable force_update, the script can automatically download the latest working version, even if the rest of the script is corrupted, because it is the first thing that reads)
     force_update <- FALSE
     ### GitHub URL where the R file is
@@ -10397,7 +10397,8 @@ spectral_typer <- function() {
                         setCellStyle(wb, sheet = "Scores - Intensity", row = no_cells_rows, col = no_cells_columns, cellstyle = no_cells_style)
                     }
                     # Set column width and row height
-                    setColumnWidth(wb, sheet = "Scores - Intensity", column = seq(1, (ncol(score_intensity_matrix) + 1)), width = -1)
+                    setColumnWidth(wb, sheet = "Scores - Intensity", column = seq(1, ncol(score_correlation_matrix)), width = 1000)
+                    setColumnWidth(wb, sheet = "Scores - Intensity", column = (ncol(score_correlation_matrix) + 1), width = -1)
                     setRowHeight(wb, sheet = "Scores - Intensity", row = seq(1, (nrow(score_intensity_matrix) + 1)), height = 30)
                     # Save workbook
                     saveWorkbook(wb)
@@ -10486,7 +10487,8 @@ spectral_typer <- function() {
                         setCellStyle(wb, sheet = "Scores - HCA", row = no_cells_rows, col = no_cells_columns, cellstyle = no_cells_style)
                     }
                     # Set column width and row height
-                    setColumnWidth(wb, sheet = "Scores - HCA", column = seq(1, (ncol(score_hca_matrix) + 1)), width = -1)
+                    setColumnWidth(wb, sheet = "Scores - HCA", column = seq(1, ncol(score_correlation_matrix)), width = 1000)
+                    setColumnWidth(wb, sheet = "Scores - HCA", column = (ncol(score_correlation_matrix) + 1), width = -1)
                     setRowHeight(wb, sheet = "Scores - HCA", row = seq(1, (nrow(score_hca_matrix) + 1)), height = 30)
                     # Save workbook
                     saveWorkbook(wb)
@@ -10564,7 +10566,8 @@ spectral_typer <- function() {
                         setCellStyle(wb, sheet = "Scores - Correlation", row = no_cells_rows, col = no_cells_columns, cellstyle = no_cells_style)
                     }
                     # Set column width and row height
-                    setColumnWidth(wb, sheet = "Scores - Correlation", column = seq(1, (ncol(score_correlation_matrix) + 1)), width = -1)
+                    setColumnWidth(wb, sheet = "Scores - Correlation", column = seq(1, ncol(score_correlation_matrix)), width = 1000)
+                    setColumnWidth(wb, sheet = "Scores - Correlation", column = (ncol(score_correlation_matrix) + 1), width = -1)
                     setRowHeight(wb, sheet = "Scores - Correlation", row = seq(1, (nrow(score_correlation_matrix) + 1)), height = 30)
                     # Save workbook
                     saveWorkbook(wb)
@@ -10642,7 +10645,8 @@ spectral_typer <- function() {
                         setCellStyle(wb, sheet = "Scores - SI", row = no_cells_rows, col = no_cells_columns, cellstyle = no_cells_style)
                     }
                     # Set column width and row height
-                    setColumnWidth(wb, sheet = "Scores - SI", column = seq(1, (ncol(score_si_matrix) + 1)), width = -1)
+                    setColumnWidth(wb, sheet = "Scores - SI", column = seq(1, ncol(score_correlation_matrix)), width = 1000)
+                    setColumnWidth(wb, sheet = "Scores - SI", column = (ncol(score_correlation_matrix) + 1), width = -1)
                     setRowHeight(wb, sheet = "Scores - SI", row = seq(1, (nrow(score_si_matrix) + 1)), height = 30)
                     # Save workbook
                     saveWorkbook(wb)
@@ -11250,4 +11254,3 @@ functions_mass_spectrometry()
 
 ### Run the function
 spectral_typer()
-
