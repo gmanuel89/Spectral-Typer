@@ -5,7 +5,7 @@ rm(list = ls())
 
 functions_mass_spectrometry <- function() {
     
-    ################## FUNCTIONS - MASS SPECTROMETRY 2017.06.26 ################
+    ################## FUNCTIONS - MASS SPECTROMETRY 2017.06.28 ################
     # Each function is assigned with <<- instead of <-, so when called by the huge functions_mass_spectrometry() function they go in the global environment, like as if the script was directly sourced from the file.
     
     
@@ -4446,82 +4446,35 @@ functions_mass_spectrometry <- function() {
     
     ##################################################################### STATISTICS
     
-    ##################### MATRIX/DATAFRAME SPLITTING FUNCTION (TRAINING AND TESTING)
-    # This function takes a peaklist matrix as input and outputs a list containing the part of the dataset used for the training and the part to be used as test dataset. The split happens onto the discriminant (class) variable.
-    # The split is made according to the user desire and according to a selected column (usually the class column).
+    ##################### MATRIX/DATAFRAME SPLITTING FUNCTION (TRAINING AND TEST)
+    # This function takes a peaklist matrix as input and outputs a list containing the part of the dataset used for the training and the part to be used as test set. The split happens onto the discriminant (class) variable: so it is a balanced split.
     # All the entries (rows) are considered independent observations.
-    matrix_splitting_training_test <<- function(peaklist, discriminant_feature = "Class", seed = 12345, percentage_of_observations_for_training = 66) {
+    training_test_split <<- function(peaklist, discriminant_attribute = "Class", seed = 12345, percentage_of_observations_for_training = 50, unbalanced_split = FALSE) {
         # Install the required packages
         require(caret)
-        if (!is.null(discriminant_feature)) {
-            ##### Determine the class list
-            class_list <- levels(as.factor(peaklist[,discriminant_feature]))
-        } else {
-            class_list <- character()
-        }
+        ### Initialize the class_list
+        class_list <- character()
+        try({
+            ### Determine the class list
+            class_list <- levels(as.factor(peaklist[, discriminant_attribute]))
+        }, silent = TRUE)
         ### If there are no classes or one class, just randomly select rows on the entire dataset
-        if (length(class_list) <= 1) {
+        if (length(class_list) == 0 || length(class_list) == 1 || unbalanced_split == TRUE) {
             # Plant the seed only if a specified value is entered
             if (!is.null(seed)) {
                 # Make the randomness reproducible
                 set.seed(seed)
             }
-            index_training <- sample(nrow(peaklist), size = round(nrow(peaklist)*percentage_of_observations_for_training/100))
-        } else if (length(class_list) > 1) {
+            # Define the row index for training
+            index_training <- sample.int(n = nrow(peaklist), size = round(nrow(peaklist) * percentage_of_observations_for_training / 100))
+        } else if (length(class_list) > 1 && unbalanced_split == FALSE) {
             ### If there are more classes, randomly select the rows for each class
-            # Create a list of dataframes, one for each class
-            class_data_frame_list <- list()
-            for (j in 1:length(class_list)) {
-                class_data_frame_list[[j]] <- peaklist[peaklist[,discriminant_feature] == class_list[j],]
-            }
-            ### Create a list containing the training and testing indexes of the class dataframes
-            index_training <- list()
-            for (i in 1:length(class_data_frame_list)) {
-                # Plant the seed only if a specified value is entered
-                if (!is.null(seed)) {
-                    # Make the randomness reproducible
-                    set.seed(seed)
-                }
-                index_training[[i]] <- createDataPartition(y = class_data_frame_list[[i]][,discriminant_feature], p = (percentage_of_observations_for_training/100), list = FALSE)
-            }
-            names(index_training) <- class_list
+            index_training <- createDataPartition(y = peaklist[,discriminant_attribute], p = (percentage_of_observations_for_training / 100), times = 1, list = TRUE)[[1]]
         }
-        ### Now we have randomly selected some patients for the training and some others for the testing, for each class
-        ### The indexTraining is integer if there are no classes or one class, and rows are selected randomly
-        if (is.integer(index_training)) {
-            training_set <- peaklist[index_training,]
-            test_dataset <- peaklist[-index_training,]
-        } else if (is.list(index_training)) {
-            # The indexTraining is a list if there are more than one classes (one element per class), and rows are selected randomly for each class
-            ### Create the training and the testing patient dataframes
-            training_data_frame_list <- list()
-            test_data_frame_list <- list()
-            # For each class (and so for each element of the list with the indexes per class)
-            for (i in 1:length(index_training)) {
-                # Create the two complementary dataframes: randomly select the patients for each class
-                # for training and testing
-                training_data_frame_list[[i]] <- class_data_frame_list[[i]][index_training[[i]],]
-                test_data_frame_list[[i]] <- class_data_frame_list[[i]][-index_training[[i]],]
-            }
-            ### Merge the two traininf and test sets
-            training_set <- NULL
-            test_dataset <- NULL
-            for (p in 1:length(training_data_frame_list)) {
-                if (is.null(training_set)) {
-                    training_set <- training_data_frame_list[[p]]
-                } else {
-                    training_set <- rbind(training_set, training_data_frame_list[[p]])
-                }
-            }
-            for (p in 1:length(test_data_frame_list)) {
-                if (is.null(test_dataset)) {
-                    test_dataset <- test_data_frame_list[[p]]
-                } else {
-                    test_dataset <- rbind(test_dataset, test_data_frame_list[[p]])
-                }
-            }
-        }
-        return(list(training_set = training_set, test_dataset = test_dataset))
+        ### Retrieve the two sets according to the index
+        training_set <- peaklist[index_training, ]
+        test_set <- peaklist[-index_training, ]
+        return(list(training_set = training_set, test_set = test_set))
     }
     
     
@@ -6254,6 +6207,10 @@ functions_mass_spectrometry <- function() {
             common_signals_reference_samples_matrix <- matrix(0, nrow = 1, ncol = reference_size)
             rownames(common_signals_reference_samples_matrix) <- x$sample_ID
             colnames(common_signals_reference_samples_matrix) <- reference_vector
+            # Most influencing signals for sample-reference pairs (sorted according to the regression coefficient, therefore the external values are the most influencing signals, with extremely negative or extremely positive coefficients)
+            most_influencing_signals_reference_samples_matrix <- matrix(0, nrow = 1, ncol = reference_size)
+            rownames(most_influencing_signals_reference_samples_matrix) <- x$sample_ID
+            colnames(most_influencing_signals_reference_samples_matrix) <- reference_vector
             # FIT matrix
             fit_matrix <- matrix(0, ncol = reference_size, nrow = 1)
             rownames(fit_matrix) <- x$sample_ID
@@ -6349,7 +6306,9 @@ functions_mass_spectrometry <- function() {
                     # Keep only the matching signals
                     if (length(matching_signals) > 0) {
                         common_peaks_reference_x_intensity <- peaks_reference_x@intensity[peaks_reference_x@mass %in% matching_signals]
+                        names(common_peaks_reference_x_intensity) <- matching_signals
                         common_peaks_sample_x_intensity <- peaks_sample_x@intensity[peaks_sample_x@mass %in% matching_signals]
+                        names(common_peaks_sample_x_intensity) <- matching_signals
                         # Weighted correlation between samples (library + test samples) (samples must be as columns and features as test) - With weights
                         if (intensity_correction_coefficient != 0 && intensity_correction_coefficient != 1 && correlation_method == "pearson") {
                             # Compute the vector of weights
@@ -6392,8 +6351,11 @@ functions_mass_spectrometry <- function() {
                         regression_slope <- linear_regression$coefficients[2]
                         regression_intercept <- linear_regression$coefficients[1]
                         slope_sample <- round(regression_slope, digits = 3)
+                        regression_coefficients <- lm.influence(linear_regression)$wt.res
+                        most_influencing_signals <- paste(names(sort(regression_coefficients)), collapse = " , ")
                         # Append this row to the global matrix
                         slope_matrix[1, db] <- slope_sample
+                        most_influencing_signals_reference_samples_matrix[1,db] <- most_influencing_signals
                     } else {
                         intensity_correlation_sample <- 0
                     }
@@ -6442,12 +6404,15 @@ functions_mass_spectrometry <- function() {
                     regression_slope <- linear_regression$coefficients[2]
                     regression_intercept <- linear_regression$coefficients[1]
                     slope_sample <- round(regression_slope, digits = 3)
+                    regression_coefficients <- lm.influence(linear_regression)$wt.res
+                    most_influencing_signals <- paste(names(sort(regression_coefficients)), collapse = " , ")
                     # Append this row to the global matrix
                     slope_matrix[1, db] <- slope_sample
+                    most_influencing_signals_reference_samples_matrix[1,db] <- most_influencing_signals
                 }
             }
             # Return a list, each element of which is a matrix row. Finally, all the matrix rows will be rbind together.
-            return(list(number_of_signals_samples = number_of_signals_samples, number_of_signals_reference_matrix = number_of_signals_reference_matrix, number_of_signals_reference_samples_matrix = number_of_signals_reference_samples_matrix, matching_signals_matrix = matching_signals_matrix, common_signals_reference_samples_matrix = common_signals_reference_samples_matrix, fit_matrix = fit_matrix, retrofit_matrix = retrofit_matrix, intensity_correlation_matrix = intensity_correlation_matrix, pvalue_matrix = pvalue_matrix, slope_matrix = slope_matrix))
+            return(list(number_of_signals_samples = number_of_signals_samples, number_of_signals_reference_matrix = number_of_signals_reference_matrix, number_of_signals_reference_samples_matrix = number_of_signals_reference_samples_matrix, matching_signals_matrix = matching_signals_matrix, common_signals_reference_samples_matrix = common_signals_reference_samples_matrix, most_influencing_signals_reference_samples_matrix = most_influencing_signals_reference_samples_matrix, fit_matrix = fit_matrix, retrofit_matrix = retrofit_matrix, intensity_correlation_matrix = intensity_correlation_matrix, pvalue_matrix = pvalue_matrix, slope_matrix = slope_matrix))
         }
         ##### Run the function for each element of the reference_sample_list (= each sample) (each sample gets compared with the database)
         if ((is.logical(allow_parallelization) && allow_parallelization == TRUE) || (is.character(allow_parallelization) && allow_parallelization == "lapply")) {
@@ -6505,6 +6470,7 @@ functions_mass_spectrometry <- function() {
         number_of_signals_reference_samples_matrix_all <- NULL
         number_of_signals_reference_matrix_all <- NULL
         common_signals_reference_samples_matrix_all <- NULL
+        most_influencing_signals_reference_samples_matrix_all <- NULL
         fit_matrix_all <- NULL
         retrofit_matrix_all <- NULL
         intensity_correlation_matrix_all <- NULL
@@ -6522,6 +6488,12 @@ functions_mass_spectrometry <- function() {
                 common_signals_reference_samples_matrix_all <- output_list[[ns]]$common_signals_reference_samples_matrix
             } else {
                 common_signals_reference_samples_matrix_all <- rbind(common_signals_reference_samples_matrix_all, output_list[[ns]]$common_signals_reference_samples_matrix)
+            }
+            # Most influencing signals
+            if (is.null(most_influencing_signals_reference_samples_matrix_all)) {
+                most_influencing_signals_reference_samples_matrix_all <- output_list[[ns]]$most_influencing_signals_reference_samples_matrix
+            } else {
+                most_influencing_signals_reference_samples_matrix_all <- rbind(most_influencing_signals_reference_samples_matrix_all, output_list[[ns]]$most_influencing_signals_reference_samples_matrix)
             }
             # Number of signals database
             if (is.null(number_of_signals_reference_matrix_all)) {
@@ -6609,7 +6581,7 @@ functions_mass_spectrometry <- function() {
                 }
             }
         }
-        return(list(score_matrix_output = score_matrix_output, score_only_matrix_output = score_only_matrix_output, common_signals_reference_samples_matrix = common_signals_reference_samples_matrix_all))
+        return(list(score_matrix_output = score_matrix_output, score_only_matrix_output = score_only_matrix_output, common_signals_reference_samples_matrix = common_signals_reference_samples_matrix_all, most_influencing_signals_reference_samples_matrix = most_influencing_signals_reference_samples_matrix_all))
     }
     
     
@@ -8850,6 +8822,7 @@ functions_mass_spectrometry <- function() {
 
 
 
+
 ##########################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################
 
 
@@ -8889,7 +8862,7 @@ spectral_typer <- function() {
     
     
     ### Program version (Specified by the program writer!!!!)
-    R_script_version <- "2017.06.26.1"
+    R_script_version <- "2017.06.28.0"
     ### Force update (in case something goes wrong after an update, when checking for updates and reading the variable force_update, the script can automatically download the latest working version, even if the rest of the script is corrupted, because it is the first thing that reads)
     force_update <- FALSE
     ### GitHub URL where the R file is
@@ -10482,6 +10455,7 @@ spectral_typer <- function() {
                 score_correlation_matrix <<- score_correlation$score_matrix_output
                 score_only_correlation_matrix <<- score_correlation$score_only_matrix_output
                 common_signals_correlation_matrix <<- score_correlation$common_signals_reference_samples_matrix
+                most_influencing_signals_correlation_matrix <<- score_correlation$most_influencing_signals_reference_samples_matrix
             }
             # Progress bar
             setTkProgressBar(st_progress_bar, value = 0.95, title = NULL, label = "Saving files...")
@@ -10515,6 +10489,7 @@ spectral_typer <- function() {
                     write.csv(score_correlation_matrix, file = paste0("CORRELATION SCORE1 - ", filename))
                     write.csv(score_only_correlation_matrix, file = paste0("CORRELATION SCORE2 - ", filename))
                     write.csv(common_signals_correlation_matrix, file = paste0("CORRELATION COMMON - ", filename))
+                    write.csv(most_influencing_signals_correlation_matrix, file = paste0("CORRELATION INFLUENCE - ", filename))
                 }
                 # Similarity index
                 if (!is.null(score_si)) {
@@ -10787,6 +10762,7 @@ spectral_typer <- function() {
                 if (!is.null(score_correlation)) {
                     ## Common signals matrix
                     writeWorksheetToFile(file = paste0("CORRELATION COMMON - ", filename), data = common_signals_correlation_matrix, sheet = "Common signals", clearSheets = TRUE, rownames = rownames(common_signals_correlation_matrix))
+                    writeWorksheetToFile(file = paste0("CORRELATION INFLUENCE - ", filename), data = most_influencing_signals_correlation_matrix, sheet = "Influencing signals", clearSheets = TRUE, rownames = rownames(most_influencing_signals_correlation_matrix))
                     ## SCORE 1
                     # Generate unique row names
                     if (length(rownames(score_correlation_matrix)) > length(unique(rownames(score_correlation_matrix)))) {
@@ -11701,4 +11677,3 @@ functions_mass_spectrometry()
 
 ### Run the function
 spectral_typer()
-
