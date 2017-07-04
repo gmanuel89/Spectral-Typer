@@ -5,7 +5,7 @@ rm(list = ls())
 
 functions_mass_spectrometry <- function() {
     
-    ################## FUNCTIONS - MASS SPECTROMETRY 2017.06.28 ################
+    ################## FUNCTIONS - MASS SPECTROMETRY 2017.07.04 ################
     # Each function is assigned with <<- instead of <-, so when called by the huge functions_mass_spectrometry() function they go in the global environment, like as if the script was directly sourced from the file.
     
     
@@ -24,7 +24,19 @@ functions_mass_spectrometry <- function() {
                 if ("RCurl" %in% installed.packages()[,1]) {
                     library(RCurl)
                 } else {
-                    install.packages("RCurl", repos = "http://cran.mirror.garr.it/mirrors/CRAN/", quiet = TRUE, verbose = FALSE)
+                    # Check for the personal local library presence before installing (~/R/packages/), then instlall in the local library
+                    if (Sys.info()[1] == "Windows") {
+                        if (length(grep("/Documents/", .libPaths()[1], fixed = TRUE)) == 0) {
+                            dir.create("~/R/libraries/")
+                            .libPaths("~/R/libraries/")
+                        }
+                    } else {
+                        if (base::startsWith(.libPaths()[1], "/usr/")) {
+                            dir.create("~/R/libraries/")
+                            .libPaths("~/R/libraries/")
+                        }
+                    }
+                    install.packages("RCurl", repos = "http://cran.mirror.garr.it/mirrors/CRAN/", quiet = TRUE, verbose = FALSE, lib = .libPaths()[1])
                     library(RCurl)
                 }
             }, silent = TRUE)
@@ -69,9 +81,33 @@ functions_mass_spectrometry <- function() {
             if (there_is_internet == TRUE) {
                 ##### If a repository is specified
                 if (repository != "" || !is.null(repository)) {
-                    update.packages(repos = repository, ask = FALSE, checkBuilt = TRUE, quiet = TRUE, verbose = FALSE)
+                    # Check for the personal local library presence before installing (~/R/packages/), then instlall in the local library
+                    if (Sys.info()[1] == "Windows") {
+                        if (length(grep("/Documents/", .libPaths()[1], fixed = TRUE)) == 0) {
+                            dir.create("~/R/libraries/")
+                            .libPaths("~/R/libraries/")
+                        }
+                    } else {
+                        if (base::startsWith(.libPaths()[1], "/usr/")) {
+                            dir.create("~/R/libraries/")
+                            .libPaths("~/R/libraries/")
+                        }
+                    }
+                    update.packages(repos = repository, ask = FALSE, checkBuilt = TRUE, quiet = TRUE, verbose = FALSE, lib.loc = .libPaths()[1])
                 } else {
-                    update.packages(ask = FALSE, checkBuilt = TRUE, quiet = TRUE, verbose = FALSE)
+                    # Check for the personal local library presence before installing (~/R/packages/), then instlall in the local library
+                    if (Sys.info()[1] == "Windows") {
+                        if (length(grep("/Documents/", .libPaths()[1], fixed = TRUE)) == 0) {
+                            dir.create("~/R/libraries/")
+                            .libPaths("~/R/libraries/")
+                        }
+                    } else {
+                        if (base::startsWith(.libPaths()[1], "/usr/")) {
+                            dir.create("~/R/libraries/")
+                            .libPaths("~/R/libraries/")
+                        }
+                    }
+                    update.packages(ask = FALSE, checkBuilt = TRUE, quiet = TRUE, verbose = FALSE, lib.loc = .libPaths()[1])
                 }
                 if (print_messages == TRUE) {
                     cat("\nPackages updated\n")
@@ -92,10 +128,34 @@ functions_mass_spectrometry <- function() {
             if (there_is_internet == TRUE) {
                 ### If a repository is specified
                 if (repository != "" || !is.null(repository)) {
-                    install.packages(missing_packages, repos = repository, quiet = TRUE, verbose = FALSE)
+                    # Check for the personal local library presence before installing (~/R/packages/), then instlall in the local library
+                    if (Sys.info()[1] == "Windows") {
+                        if (length(grep("/Documents/", .libPaths()[1], fixed = TRUE)) == 0) {
+                            dir.create("~/R/libraries/")
+                            .libPaths("~/R/libraries/")
+                        }
+                    } else {
+                        if (base::startsWith(.libPaths()[1], "/usr/")) {
+                            dir.create("~/R/libraries/")
+                            .libPaths("~/R/libraries/")
+                        }
+                    }
+                    install.packages(missing_packages, repos = repository, quiet = TRUE, verbose = FALSE, lib = .libPaths()[1])
                 } else {
                     ### If NO repository is specified
-                    install.packages(missing_packages, quiet = TRUE, verbose = FALSE)
+                    # Check for the personal local library presence before installing (~/R/packages/), then instlall in the local library
+                    if (Sys.info()[1] == "Windows") {
+                        if (length(grep("/Documents/", .libPaths()[1], fixed = TRUE)) == 0) {
+                            dir.create("~/R/libraries/")
+                            .libPaths("~/R/libraries/")
+                        }
+                    } else {
+                        if (base::startsWith(.libPaths()[1], "/usr/")) {
+                            dir.create("~/R/libraries/")
+                            .libPaths("~/R/libraries/")
+                        }
+                    }
+                    install.packages(missing_packages, quiet = TRUE, verbose = FALSE, lib = .libPaths()[1])
                 }
                 if (print_messages == TRUE) {
                     cat("\nAll the required packages have been installed\n")
@@ -8823,6 +8883,7 @@ functions_mass_spectrometry <- function() {
 
 
 
+
 ##########################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################
 
 
@@ -8862,7 +8923,7 @@ spectral_typer <- function() {
     
     
     ### Program version (Specified by the program writer!!!!)
-    R_script_version <- "2017.06.28.0"
+    R_script_version <- "2017.07.04.0"
     ### Force update (in case something goes wrong after an update, when checking for updates and reading the variable force_update, the script can automatically download the latest working version, even if the rest of the script is corrupted, because it is the first thing that reads)
     force_update <- FALSE
     ### GitHub URL where the R file is
@@ -10406,7 +10467,12 @@ spectral_typer <- function() {
             if ("signal intensity" %in% similarity_criteria) {
                 all_is_completed_successfully_intensity <- FALSE
                 try({
-                    score_intensity <- spectral_typer_score_signal_intensity(spectra_reference, spectra_test, class_list_library = reference_folder_list, reference_spectral_variability_list = reference_spectral_variability_list, test_spectral_variability_list = test_spectral_variability_list, signal_intensity_evaluation = signal_intensity_evaluation, peaks_filtering_percentage_threshold = peaks_filtering_threshold_percent, low_intensity_percentage_threshold = low_intensity_peak_removal_percentage_threshold, low_intensity_threshold_method = low_intensity_peak_removal_threshold_method, tof_mode = tof_mode, intensity_tolerance_percent_threshold = intensity_tolerance_percent, spectra_format = spectra_format, allow_parallelization = allow_parallelization, score_threshold_values = score_threshold_values, tolerance_ppm = tolerance_ppm, peak_picking_mode = peak_picking_mode, signals_to_take = signals_to_take, peak_picking_SNR = SNR, peak_picking_algorithm = peak_picking_algorithm, peak_deisotoping = peak_deisotoping, peak_enveloping = peak_enveloping, spectral_alignment_algorithm = spectral_alignment_algorithm, spectral_alignment_reference = spectral_alignment_reference)
+                    if (length(reference_folder_list) > 0) {
+                        class_list_library <- reference_folder_list
+                    } else {
+                        class_list_library <- reference_files
+                    }
+                    score_intensity <- spectral_typer_score_signal_intensity(spectra_reference, spectra_test, class_list_library = class_list_library, reference_spectral_variability_list = reference_spectral_variability_list, test_spectral_variability_list = test_spectral_variability_list, signal_intensity_evaluation = signal_intensity_evaluation, peaks_filtering_percentage_threshold = peaks_filtering_threshold_percent, low_intensity_percentage_threshold = low_intensity_peak_removal_percentage_threshold, low_intensity_threshold_method = low_intensity_peak_removal_threshold_method, tof_mode = tof_mode, intensity_tolerance_percent_threshold = intensity_tolerance_percent, spectra_format = spectra_format, allow_parallelization = allow_parallelization, score_threshold_values = score_threshold_values, tolerance_ppm = tolerance_ppm, peak_picking_mode = peak_picking_mode, signals_to_take = signals_to_take, peak_picking_SNR = SNR, peak_picking_algorithm = peak_picking_algorithm, peak_deisotoping = peak_deisotoping, peak_enveloping = peak_enveloping, spectral_alignment_algorithm = spectral_alignment_algorithm, spectral_alignment_reference = spectral_alignment_reference)
                     if (!is.null(score_intensity)) {
                         all_is_completed_successfully_intensity <- TRUE
                     }
