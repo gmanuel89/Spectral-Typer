@@ -5,7 +5,7 @@ rm(list = ls())
 
 functions_mass_spectrometry <- function() {
     
-    ################## FUNCTIONS - MASS SPECTROMETRY 2017.07.04 ################
+    ################## FUNCTIONS - MASS SPECTROMETRY 2017.07.06 ################
     # Each function is assigned with <<- instead of <-, so when called by the huge functions_mass_spectrometry() function they go in the global environment, like as if the script was directly sourced from the file.
     
     
@@ -4946,7 +4946,11 @@ functions_mass_spectrometry <- function() {
         }
         ### Define the control function of the RFE
         rfe_ctrl <- rfeControl(functions = caretFuncs, method = "repeatedcv", repeats = cv_repeats_control, number = k_fold_cv_control, saveDetails = TRUE, allowParallel = allow_parallelization, rerank = feature_reranking, seeds = NULL)
-        train_ctrl <- trainControl(method = "repeatedcv", repeats = cv_repeats_control, number = k_fold_cv_control, allowParallel = allow_parallelization, seeds = NULL, classProbs = TRUE)
+        if (length(levels(as.factor(training_set[,discriminant_attribute]))) == 2) {
+            train_ctrl <- trainControl(method = "repeatedcv", repeats = cv_repeats_control, number = k_fold_cv_control, allowParallel = allow_parallelization, seeds = NULL, classProbs = TRUE, summaryFunction = twoClassSummary)
+        } else if (length(levels(as.factor(training_set[,discriminant_attribute]))) > 2) {
+            train_ctrl <- trainControl(method = "repeatedcv", repeats = cv_repeats_control, number = k_fold_cv_control, allowParallel = allow_parallelization, seeds = NULL, classProbs = TRUE, summaryFunction = multiClassSummary)
+        }
         ### Model tuning is performed during feature selection (best choice)
         if (!is.null(model_tuning) && model_tuning == "embedded" && is.list(model_tune_grid)) {
             # Run the RFE
@@ -5025,7 +5029,11 @@ functions_mass_spectrometry <- function() {
                 set.seed(seed)
             }
             # Define the control function
-            train_ctrl <- trainControl(method = "repeatedcv", repeats = cv_repeats_control, number = k_fold_cv_control, allowParallel = allow_parallelization, seeds = NULL, classProbs = TRUE)
+            if (length(levels(as.factor(training_set[,discriminant_attribute]))) == 2) {
+                train_ctrl <- trainControl(method = "repeatedcv", repeats = cv_repeats_control, number = k_fold_cv_control, allowParallel = allow_parallelization, seeds = NULL, classProbs = TRUE, summaryFunction = twoClassSummary)
+            } else if (length(levels(as.factor(training_set[,discriminant_attribute]))) > 2) {
+                train_ctrl <- trainControl(method = "repeatedcv", repeats = cv_repeats_control, number = k_fold_cv_control, allowParallel = allow_parallelization, seeds = NULL, classProbs = TRUE, summaryFunction = multiClassSummary)
+            }
             # Define the model tuned
             fs_model_tuning <- train(x = training_set_feature_selection[, !(names(training_set_feature_selection) %in% non_features)], y = as.factor(training_set_feature_selection[, discriminant_attribute]), method = selection_method, preProcess = preprocessing, tuneGrid = expand.grid(model_tune_grid), trControl = train_ctrl, metric = selection_metric)
             # Plots
@@ -6072,9 +6080,9 @@ functions_mass_spectrometry <- function() {
         colnames(distance_matrix) <- peaklist_matrix[,"Sample"]
         rownames(distance_matrix) <- peaklist_matrix[,"Sample"]
         # Remove the first rows (the spectra from the database) and Keep only the first columns (the spectra from the database)
-        distance_matrix <- distance_matrix[(reference_size + 1):nrow(distance_matrix), 1:reference_size]
+        distance_matrix <- as.matrix(distance_matrix[(reference_size + 1):nrow(distance_matrix), 1:reference_size])
         ### Normalize the euclidean distances (per sample)
-        if (normalize_distances == TRUE) {
+        if (normalize_distances == TRUE && nrow(distance_matrix) > 1 && ncol(distance_matrix) > 1) {
             # Sample TIC (SUM of the distances of the sample from all the database entries)
             if (normalization_method == "sum") {
                 # Compute the sum of the rows
@@ -6141,9 +6149,25 @@ functions_mass_spectrometry <- function() {
                 }
                 result_matrix <- apply(distance_matrix, MARGIN = c(1,2), FUN = function(x) scoring_function(x))
             }
+        } else {
+            # Scroll the rows, assign the class based upon the distance, create the output matrix for results (create a function to apply to each matrix row)
+            scoring_function <- function(x) {
+                if (x < 0.1) {
+                    x <- paste0("YES\n(", round(as.numeric(x),3), ")")
+                } else if (x >= 0.1 && x < 1) {
+                    x <- paste0("NI\n(", round(as.numeric(x),3), ")")
+                } else if (x >= 1) {
+                    x <- paste0("NO\n(", round(as.numeric(x),3), ")")
+                }
+                return(x)
+            }
+            result_matrix <- apply(distance_matrix, MARGIN = c(1,2), FUN = function(x) scoring_function(x))
         }
         # Spectra path
-        result_matrix <- cbind(result_matrix, sample_vector)
+        result_matrix <- cbind(result_matrix, spectra_path_vector)
+        colnames(result_matrix) <- c(reference_vector, "Spectrum path")
+        rownames(result_matrix) <- sample_vector
+        # Return
         return(list(result_matrix = result_matrix, hca_dendrogram = hca_dendrogram))
     }
     
@@ -6815,8 +6839,12 @@ functions_mass_spectrometry <- function() {
                 peaks_sample_x <- peaks_all[["peaks_sample_x"]]
                 # Replace the SNR in the peaks with the CV (for each peak)
                 if ((!is.null(reference_spectral_variability_list) && length(reference_spectral_variability_list) > 0) && (!is.null(test_spectral_variability_list) && length(test_spectral_variability_list) > 0)) {
-                    peaks_reference_x@snr <- reference_spectral_variability_list$cv_list[[db]]
-                    peaks_sample_x@snr <- test_spectral_variability_list$cv_list[[x$sample_ID]]
+                    if (length(peaks_reference_x@snr) == length(reference_spectral_variability_list$cv_list[[db]]) && length(peaks_sample_x@snr) == length(test_spectral_variability_list$cv_list[[x$sample_ID]])) {
+                        peaks_reference_x@snr <- reference_spectral_variability_list$cv_list[[db]]
+                        peaks_sample_x@snr <- test_spectral_variability_list$cv_list[[x$sample_ID]]
+                    } else {
+                        signal_intensity_evaluation <- "average coefficient of variation"
+                    }
                 }
                 ## Number of signals
                 number_of_signals_samples <- length(peaks_sample_x@mass)
@@ -6884,7 +6912,7 @@ functions_mass_spectrometry <- function() {
                     }
                     # Append this row to the global matrix
                     intensity_matching_matrix[1, db] <- intensity_matching_sample
-                } else if (signal_intensity_evaluation == "peak-wise adjusted percentage" && (!is.null(x[["reference_spectral_variability_list"]]) && !is.null(x[["test_spectral_variability_list"]])) || (length(x[["reference_spectral_variability_list"]]) > 0 && length(x[["test_spectral_variability_list"]]) > 0)) {
+                } else if (signal_intensity_evaluation == "peak-wise adjusted percentage" && (!is.null(x[["reference_spectral_variability_list"]]) && !is.null(x[["test_spectral_variability_list"]])) && (length(x[["reference_spectral_variability_list"]]) > 0 && length(x[["test_spectral_variability_list"]]) > 0)) {
                     ## PEAK-WISE ADJUSTED INTENSITY PERCENTAGE
                     # Create a counter, symmetrical to the database Peaklist
                     if (length(peaks_sample_x@mass) > 0 && length(peaks_reference_x@mass) > 0) {
@@ -6941,7 +6969,7 @@ functions_mass_spectrometry <- function() {
                     }
                     # Append this row to the global matrix
                     intensity_matching_matrix[1, db] <- intensity_matching_sample
-                } else if (signal_intensity_evaluation == "average coefficient of variation" && (!is.null(x[["reference_spectral_variability_list"]]) && !is.null(x[["test_spectral_variability_list"]])) || (length(x[["reference_spectral_variability_list"]]) > 0 && length(x[["test_spectral_variability_list"]]) > 0)) {
+                } else if (signal_intensity_evaluation == "average coefficient of variation" && (!is.null(x[["reference_spectral_variability_list"]]) && !is.null(x[["test_spectral_variability_list"]])) && (length(x[["reference_spectral_variability_list"]]) > 0 && length(x[["test_spectral_variability_list"]]) > 0)) {
                     ## AVERAGE COEFFICIENT OF VARIATION
                     # Create a counter, symmetrical to the database Peaklist
                     if (length(peaks_sample_x@mass) > 0 && length(peaks_reference_x@mass) > 0) {
@@ -8884,6 +8912,7 @@ functions_mass_spectrometry <- function() {
 
 
 
+
 ##########################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################
 
 
@@ -8923,7 +8952,7 @@ spectral_typer <- function() {
     
     
     ### Program version (Specified by the program writer!!!!)
-    R_script_version <- "2017.07.04.0"
+    R_script_version <- "2017.07.06.0"
     ### Force update (in case something goes wrong after an update, when checking for updates and reading the variable force_update, the script can automatically download the latest working version, even if the rest of the script is corrupted, because it is the first thing that reads)
     force_update <- FALSE
     ### GitHub URL where the R file is
@@ -10125,7 +10154,9 @@ spectral_typer <- function() {
                 } else {
                     if (spectra_format == "imzML") {
                         spectral_files <- read_spectra_files(filepath_reference, spectra_format = spectra_format, full_path = TRUE)
-                        reference_spectral_variability_list <- spectral_variability_estimation(spectra = spectra_reference, folder_list = spectral_files, peak_picking_SNR = SNR, peak_picking_algorithm = peak_picking_algorithm, spectra_format = spectra_format, peak_picking_mode = peak_picking_mode, signals_to_take = signals_to_take, tof_mode = tof_mode, peak_deisotoping = peak_deisotoping, allow_parallelization = allow_parallelization)
+                        try({
+                            reference_spectral_variability_list <- spectral_variability_estimation(spectra = spectra_reference, folder_list = spectral_files, peak_picking_SNR = SNR, peak_picking_algorithm = peak_picking_algorithm, spectra_format = spectra_format, peak_picking_mode = peak_picking_mode, signals_to_take = signals_to_take, tof_mode = tof_mode, peak_deisotoping = peak_deisotoping, allow_parallelization = allow_parallelization)
+                        }, silent = TRUE)
                     } else {
                         reference_spectral_variability_list <- NULL
                     }
@@ -10137,7 +10168,9 @@ spectral_typer <- function() {
                 } else {
                     if (spectra_format == "imzML") {
                         spectral_files <- read_spectra_files(filepath_test, spectra_format = spectra_format, full_path = TRUE)
-                        test_spectral_variability_list <- spectral_variability_estimation(spectra = spectra_test, folder_list = spectral_files, peak_picking_SNR = SNR, peak_picking_algorithm = peak_picking_algorithm, spectra_format = spectra_format, peak_picking_mode = peak_picking_mode, signals_to_take = signals_to_take, tof_mode = tof_mode, peak_deisotoping = peak_deisotoping, allow_parallelization = allow_parallelization)
+                        try({
+                            test_spectral_variability_list <- spectral_variability_estimation(spectra = spectra_test, folder_list = spectral_files, peak_picking_SNR = SNR, peak_picking_algorithm = peak_picking_algorithm, spectra_format = spectra_format, peak_picking_mode = peak_picking_mode, signals_to_take = signals_to_take, tof_mode = tof_mode, peak_deisotoping = peak_deisotoping, allow_parallelization = allow_parallelization)
+                        }, silent = TRUE)
                     } else {
                         test_spectral_variability_list <- NULL
                     }
@@ -10357,32 +10390,32 @@ spectral_typer <- function() {
     
     ##### Run the Spectral Typer
     run_spectral_typer_function <- function() {
-        setwd(output_folder)
-        ##### Automatically create a subfolder with all the results
-        # Add the date and time to the filename
-        current_date <- unlist(strsplit(as.character(Sys.time()), " "))[1]
-        current_date_split <- unlist(strsplit(current_date, "-"))
-        current_time <- unlist(strsplit(as.character(Sys.time()), " "))[2]
-        current_time_split <- unlist(strsplit(current_time, ":"))
-        final_date <- ""
-        for (x in 1:length(current_date_split)) {
-            final_date <- paste0(final_date, current_date_split[x])
-        }
-        final_time <- ""
-        for (x in 1:length(current_time_split)) {
-            final_time <- paste0(final_time, current_time_split[x])
-        }
-        final_date_time <- paste(final_date, final_time, sep = "_")
-        SCORE_subfolder <- paste0("SCORE", " (", final_date_time, ")")
-        # Generate the new subfolder
-        subfolder <- file.path(output_folder, SCORE_subfolder)
-        # Create the subfolder
-        dir.create(subfolder)
-        # Go to the new working directory
-        setwd(subfolder)
-        set_file_name()
         ############ Do not run if the spectra have not been imported or the peaks have not been picked
         if (!is.null(spectra_reference) && !is.null(spectra_test)) {
+            setwd(output_folder)
+            ##### Automatically create a subfolder with all the results
+            # Add the date and time to the filename
+            current_date <- unlist(strsplit(as.character(Sys.time()), " "))[1]
+            current_date_split <- unlist(strsplit(current_date, "-"))
+            current_time <- unlist(strsplit(as.character(Sys.time()), " "))[2]
+            current_time_split <- unlist(strsplit(current_time, ":"))
+            final_date <- ""
+            for (x in 1:length(current_date_split)) {
+                final_date <- paste0(final_date, current_date_split[x])
+            }
+            final_time <- ""
+            for (x in 1:length(current_time_split)) {
+                final_time <- paste0(final_time, current_time_split[x])
+            }
+            final_date_time <- paste(final_date, final_time, sep = "_")
+            SCORE_subfolder <- paste0("SCORE", " (", final_date_time, ")")
+            # Generate the new subfolder
+            subfolder <- file.path(output_folder, SCORE_subfolder)
+            # Create the subfolder
+            dir.create(subfolder)
+            # Go to the new working directory
+            setwd(subfolder)
+            set_file_name()
             # Progress bar
             st_progress_bar <- tkProgressBar(title = "Computing spectral similarities...", label = "", min = 0, max = 1, initial = 0, width = 400)
             setTkProgressBar(st_progress_bar, value = 0, title = NULL, label = NULL)
