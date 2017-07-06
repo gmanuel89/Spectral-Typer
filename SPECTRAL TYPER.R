@@ -4293,6 +4293,7 @@ functions_mass_spectrometry <- function() {
                 if (length(list_of_models) > 2 && !is.null(final_result_matrix_msi_patient) && classes_are_the_same_for_each_model == TRUE && outcomes_are_the_same_for_each_model == TRUE) {
                     ##### Unweighted majority
                     if ("unweighted majority" %in% decision_method_ensemble) {
+                        cat("\nComputing ensemble classification: Unweighted Majority\n")
                         ### Classification matrix
                         classification_ensemble_matrix_msi <- ensemble_vote_classification(classification_matrix = final_result_matrix_msi_patient, class_list = model_list[[1]]$class_list, weighted_decision_method = "unweighted majority", classification_probabilities_list = predicted_classes_probs_list, performance_parameter_list = model_performance_parameter_list, type_of_validation_for_performance_estimation = "cv")
                         # Store the ensemble classification matrix in the final output list
@@ -4338,6 +4339,7 @@ functions_mass_spectrometry <- function() {
                     }
                     ##### Class assignment probabilities
                     if ("class assignment probabilities" %in% decision_method_ensemble) {
+                        cat("\nComputing ensemble classification: Class Assignment Probabilities\n")
                         ### Classification matrix
                         classification_ensemble_matrix_msi <- ensemble_vote_classification(classification_matrix = final_result_matrix_msi_patient, class_list = model_list[[1]]$class_list, weighted_decision_method = "class assignment probabilities", classification_probabilities_list = predicted_classes_probs_list, performance_parameter_list = model_performance_parameter_list, type_of_validation_for_performance_estimation = "cv")
                         # Store the ensemble classification matrix in the final output list
@@ -4383,6 +4385,7 @@ functions_mass_spectrometry <- function() {
                     }
                     ##### Class assignment probabilities
                     if ("bayesian probabilities" %in% decision_method_ensemble) {
+                        cat("\nComputing ensemble classification: Bayesian Probabilities\n")
                         ### Classification matrix
                         classification_ensemble_matrix_msi <- ensemble_vote_classification(classification_matrix = final_result_matrix_msi_patient, class_list = model_list[[1]]$class_list, weighted_decision_method = "bayesian probabilities", classification_probabilities_list = predicted_classes_probs_list, performance_parameter_list = model_performance_parameter_list, type_of_validation_for_performance_estimation = "cv")
                         # Store the ensemble classification matrix in the final output list
@@ -8913,6 +8916,7 @@ functions_mass_spectrometry <- function() {
 
 
 
+
 ##########################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################
 
 
@@ -8952,7 +8956,7 @@ spectral_typer <- function() {
     
     
     ### Program version (Specified by the program writer!!!!)
-    R_script_version <- "2017.07.06.0"
+    R_script_version <- "2017.07.06.1"
     ### Force update (in case something goes wrong after an update, when checking for updates and reading the variable force_update, the script can automatically download the latest working version, even if the rest of the script is corrupted, because it is the first thing that reads)
     force_update <- FALSE
     ### GitHub URL where the R file is
@@ -10223,6 +10227,7 @@ spectral_typer <- function() {
                         spectra_reference <- preprocess_spectra(spectra_reference, tof_mode = tof_mode, preprocessing_parameters = list(mass_range = mass_range, transformation_algorithm = transform_data_algorithm, smoothing_algorithm = smoothing_algorithm, smoothing_strength = smoothing_strength, baseline_subtraction_algorithm = baseline_subtraction_algorithm, baseline_subtraction_algorithm_parameter = baseline_subtraction_algorithm_parameter, normalization_algorithm = normalization_algorithm, normalization_mass_range = normalization_mass_range, preprocess_spectra_in_packages_of = preprocess_spectra_in_packages_of, spectral_alignment_algorithm = NULL, spectral_alignment_reference = NULL), allow_parallelization = allow_parallelization, tolerance_ppm = tolerance_ppm)
                     } else {
                         # If there are only files, just replace the sample name field in the spectra (as if group_spectra_class had been run)
+                        spectra_reference <- preprocess_spectra(spectra_reference, tof_mode = tof_mode, preprocessing_parameters = list(mass_range = mass_range, transformation_algorithm = transform_data_algorithm, smoothing_algorithm = smoothing_algorithm, smoothing_strength = smoothing_strength, baseline_subtraction_algorithm = baseline_subtraction_algorithm, baseline_subtraction_algorithm_parameter = baseline_subtraction_algorithm_parameter, normalization_algorithm = normalization_algorithm, normalization_mass_range = normalization_mass_range, preprocess_spectra_in_packages_of = preprocess_spectra_in_packages_of, spectral_alignment_algorithm = NULL, spectral_alignment_reference = NULL), allow_parallelization = allow_parallelization, tolerance_ppm = tolerance_ppm)
                         spectra_reference <- replace_sample_name(spectra_reference, spectra_format = spectra_format, allow_parallelization = allow_parallelization)
                     }
                 }
