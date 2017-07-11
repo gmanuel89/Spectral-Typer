@@ -3,7 +3,7 @@
 ***
 
 ## Program version
-In order for this WIKI to be applicable, the version of the program must be equal to or higher than **2017.06.21.0**.
+In order for this WIKI to be applicable, the version of the program must be equal to or higher than **2017.07.11.1**.
 
 ***
 
@@ -13,13 +13,13 @@ In order for this WIKI to be applicable, the version of the program must be equa
 ***
 
 ## Platform(s) tested
-Ubuntu Linux 16.04 x64 - R 3.4.0
+Ubuntu Linux 16.04 x64 - R 3.4.1
 
-Fedora Linux 25 x64 - R 3.4.0
+Fedora Linux 26 x64 - R 3.4.1
 
-Microsoft Windows 7 x64 - R 3.4.0
+Microsoft Windows 7 x64 - R 3.4.1
 
-Microsoft Windows 10 x64 - R 3.4.0
+Microsoft Windows 10 x64 - R 3.4.1
 
 ***
 
@@ -85,9 +85,7 @@ The spectra files are placed in a folder with the same name as the peaklist file
 
 * **Signal-to-noise ratio**: defines the signal-to-noise ratio to be used as a threshold for peak picking, after noise estimation.
 
-* **Peak picking mode**: defines if "all" the peaks should be kept or only the "most intense" for each spectrum.
-
-* **Most intense signals to take**: defines the number of most intense signals to preserve (if "most intense" is selected as "Peak picking mode").
+* **Most intense signals to take**: defines the number of most intense signals to preserve (a value of 0 retains all the peaks).
 
 * **Peak filtering threshold percentage**: defines the percentage threshold according to which all the peaks that are not present in at least the selected percentage of the spectra are discarded.
 
@@ -163,14 +161,14 @@ Example of folder hierarchy:
 
 * REFERENCE
     * One-level
-        * Spectral files (imzML,TXT,CSV,MSD files or folder containing Bruker's Xmass spectrum data)
-        * Class-Entry folders/Replicate spectral files (imzML,TXT,CSV,MSD files or folder containing Bruker's Xmass spectrum data)
+        * Spectral files (imzML, TXT, CSV, MSD files or folder containing Bruker's Xmass spectrum data)
+        * Class-Entry folders/Replicate spectral files (imzML, TXT, CSV, MSD files or folder containing Bruker's Xmass spectrum data)
     * Two-level
-        * Class-Entry folders/Treatment folders/Replicate spectral files (imzML,TXT,CSV,MSD files or folder containing Bruker's Xmass spectrum data)
+        * Class-Entry folders/Treatment folders/Replicate spectral files (imzML, TXT, CSV, MSD files or folder containing Bruker's Xmass spectrum data)
 
 * SAMPLES
     * One-level
-        * Spectral files (imzML,TXT,CSV,MSD files or folder containing Bruker's Xmass spectrum data)
+        * Spectral files (imzML, TXT, CSV, MSD files or folder containing Bruker's Xmass spectrum data)
     * Two-level
-        * Sample folders/Treatment folders/Replicate spectral files (imzML,TXT,CSV,MSD files or folder containing Bruker's Xmass spectrum data)
+        * Sample folders/Treatment folders/Replicate spectral files (imzML, TXT, CSV, MSD files or folder containing Bruker's Xmass spectrum data)
     
