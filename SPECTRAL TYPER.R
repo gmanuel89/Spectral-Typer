@@ -5,7 +5,7 @@ rm(list = ls())
 
 functions_mass_spectrometry <- function() {
     
-    ################## FUNCTIONS - MASS SPECTROMETRY 2017.07.12 ################
+    ################## FUNCTIONS - MASS SPECTROMETRY 2017.07.13 ################
     # Each function is assigned with <<- instead of <-, so when called by the huge functions_mass_spectrometry() function they go in the global environment, like as if the script was directly sourced from the file.
     
     
@@ -2469,6 +2469,8 @@ functions_mass_spectrometry <- function() {
                 if (NA_values == TRUE) {
                     return(spectra)
                 } else {
+                    # Crop the align spectra to a common range before returning
+                    aligned_spectra <- MALDIquant::trim(aligned_spectra)
                     names(aligned_spectra) <- names(spectra)
                     return(aligned_spectra)
                 }
@@ -8830,6 +8832,7 @@ functions_mass_spectrometry <- function() {
 
 
 
+
 ##########################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################
 
 
@@ -8869,7 +8872,7 @@ spectral_typer <- function() {
     
     
     ### Program version (Specified by the program writer!!!!)
-    R_script_version <- "2017.07.13.0"
+    R_script_version <- "2017.07.13.1"
     ### Force update (in case something goes wrong after an update, when checking for updates and reading the variable force_update, the script can automatically download the latest working version, even if the rest of the script is corrupted, because it is the first thing that reads)
     force_update <- FALSE
     ### GitHub URL where the R file is
@@ -8879,7 +8882,7 @@ spectral_typer <- function() {
     ### Name of the file when downloaded
     script_file_name <- "SPECTRAL TYPER"
     # Change log
-    change_log <- "1. Auto adjust the intensity tolerance percentage value according to the spectral variability\n2. Variability estimation (mean signal CV)\n3. Peak enveloping\n4. More types of spectra files can be imported!\n4. Added the RMS normalization\n5. Parallel now in foreach!\n6. Allow to set tolerance in ppm\n7. Conditional formatting in Excel\n7. New names\n8. Now works with TXT replicates!"
+    change_log <- "1. Auto adjust the intensity tolerance percentage value according to the spectral variability\n2. Variability estimation (mean signal CV)\n3. Peak enveloping\n4. More types of spectra files can be imported!\n4. Added the RMS normalization\n5. Parallel now in foreach!\n6. Allow to set tolerance in ppm\n7. Conditional formatting in Excel\n7. New names\n8. Now works with TXT replicates!\n9. Cropping spectra to a common range after alignment"
     
     
     
@@ -11656,4 +11659,3 @@ functions_mass_spectrometry()
 
 ### Run the function
 spectral_typer()
-
