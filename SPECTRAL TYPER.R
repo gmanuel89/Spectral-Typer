@@ -296,26 +296,20 @@ functions_mass_spectrometry <- function() {
             colnames(classification_ensemble_matrix) <- "Ensemble classification"
         } else if (weighted_decision_method == "bayesian probabilities" && (!is.null(performance_parameter_list) && is.list(performance_parameter_list) && length(performance_parameter_list) > 0)) {
             ##### Majority vote: bayesian probabilities
+            # Determine the type of validation (cross or external) to use
+            if (type_of_validation_for_performance_estimation == "cv" || type_of_validation_for_performance_estimation == "cross validation" || type_of_validation_for_performance_estimation == "CV") {
+                model_performance_parameter_list <- performance_parameter_list$cv
+            } else if (type_of_validation_for_performance_estimation == "ev" || type_of_validation_for_performance_estimation == "external validation" || type_of_validation_for_performance_estimation == "EV") {
+                model_performance_parameter_list <- performance_parameter_list$external
+            }
             ## Initialize the final classification ensemble matrix
             classification_ensemble_matrix <- NULL
-            # For each row of the classification matrix...
-            for (s in 1:nrow(classification_matrix)) {
-                # Retrieve the spectrum ID
-                if (!is.null(rownames(classification_matrix[s,]))) {
-                    spectrum_ID <- rownames(classification_matrix[s,])
-                } else {
-                    spectrum_ID <- s
-                }
+            # Define the function for apply, to be run for each row of the classification matrix... (x = classification_matrix row)
+            bayesian_ensemble_predictions_subfunction <- function(x) {
                 # Retrieve the predicted classes by the models for that spectrum (vector of 0 and 1, e.g. 0, 1, 0)
-                predicted_classes_models <- as.matrix(classification_matrix[s,])
+                predicted_classes_models <- as.matrix(x)
                 # Initialize the class probability list (each element is referred to a class and it is a vector of probabilities for each model for that spectrum): each element of the list will contain the probabilities of the spectrum for that class for all the models. E.g. element named 0 will contain the P(0).
                 class_probs_list <- list()
-                # Determine the type of validation (cross or external) to use
-                if (type_of_validation_for_performance_estimation == "cv" || type_of_validation_for_performance_estimation == "cross validation" || type_of_validation_for_performance_estimation == "CV") {
-                    model_performance_parameter_list <- performance_parameter_list$cv
-                } else if (type_of_validation_for_performance_estimation == "ev" || type_of_validation_for_performance_estimation == "external validation" || type_of_validation_for_performance_estimation == "EV") {
-                    model_performance_parameter_list <- performance_parameter_list$external
-                }
                 # P(d|h) = probability that the class of the real data (d) is a value given the hypothesis (h). E.g. P(d=1|h=1) is the probability that the real data is 1 given that it is really 1, so it is the probability that the class of the patient is really 1 (h=1) when the model says that it is 1 (d=1).
                 # For class 0 --> P(0) = P(d=0|h=0) or P(d=1|h=0) according to if the model says that the patient is 1 (d=1) or 0 (d=0). The hypothesis is always h=0 because we are calculating the probabilities of the data to be of class 0.
                 # For class 1 --> P(1) = P(d=1|h=1) or P(d=0|h=1) according to if the model says that the patient is 1 (d=1) or 0 (d=0). The hypothesis is always h=1 because we are calculating the probabilities of the data to be of class 1.
@@ -348,14 +342,11 @@ functions_mass_spectrometry <- function() {
                 # Extract the most probable class
                 final_class_vector <- unlist(final_class_probs)
                 most_probable_class <- as.matrix(names(which(final_class_vector == max(final_class_vector, na.rm = TRUE))))
-                rownames(most_probable_class) <- spectrum_ID
-                # Store it in the final matrix
-                if (is.null(classification_ensemble_matrix)) {
-                    classification_ensemble_matrix <- most_probable_class
-                } else {
-                    classification_ensemble_matrix <- rbind(classification_ensemble_matrix, most_probable_class)
-                }
+                # Return
+                return(most_probable_class)
             }
+            # Apply the function
+            classification_ensemble_matrix <- as.matrix(cbind(apply(X = as.matrix(classification_matrix), MARGIN = 1, FUN = bayesian_ensemble_predictions_subfunction)))
             colnames(classification_ensemble_matrix) <- "Ensemble classification"
         } else {
             classification_ensemble_matrix <- NULL
@@ -4160,7 +4151,7 @@ functions_mass_spectrometry <- function() {
                 ### Pixel by pixel
                 if ("pixel" %in% classification_mode) {
                     # Perform the classification
-                    model_classification <- single_model_classification_of_spectra(spectra = sample_spectra, model_x = model_list[[md]], model_name = list_of_models[md], preprocessing_parameters = NULL, peak_picking_algorithm = peak_picking_algorithm, deisotope_peaklist = deisotope_peaklist, peak_picking_SNR = 3, peak_filtering_frequency_threshold_percent = 0, low_intensity_peak_removal_threshold_percent = 0, low_intensity_peak_removal_threshold_method = "element-wise", tof_mode = tof_mode, allow_parallelization = allow_parallelization, pixel_grouping = pixel_grouping, number_of_hca_nodes = number_of_hca_nodes, moving_window_size = moving_window_size, seed = seed, correlation_method_for_adjacency_matrix = correlation_method_for_adjacency_matrix, correlation_threshold_for_adjacency_matrix = correlation_threshold_for_adjacency_matrix, pvalue_threshold_for_adjacency_matrix = pvalue_threshold_for_adjacency_matrix, max_GA_generations = max_GA_generations, iterations_with_no_change = iterations_with_no_change_GA, number_of_spectra_partitions = number_of_spectra_partitions_graph, partitioning_method = partitioning_method_graph, plot_figures = plot_figures, plot_graphs = plot_graphs, plot_legends = plot_legends, classification_mode_graph = classification_mode_graph, features_to_use_for_graph = features_to_use_for_graph, tolerance_ppm = tolerance_ppm)
+                    model_classification <- single_model_classification_of_spectra(spectra = sample_spectra, model_x = model_list[[md]], model_name = list_of_models[md], preprocessing_parameters = NULL, peak_picking_algorithm = peak_picking_algorithm, deisotope_peaklist = FALSE, peak_picking_SNR = 3, peak_filtering_frequency_threshold_percent = 0, low_intensity_peak_removal_threshold_percent = 0, low_intensity_peak_removal_threshold_method = "element-wise", tof_mode = tof_mode, allow_parallelization = allow_parallelization, pixel_grouping = pixel_grouping, number_of_hca_nodes = number_of_hca_nodes, moving_window_size = moving_window_size, seed = seed, correlation_method_for_adjacency_matrix = correlation_method_for_adjacency_matrix, correlation_threshold_for_adjacency_matrix = correlation_threshold_for_adjacency_matrix, pvalue_threshold_for_adjacency_matrix = pvalue_threshold_for_adjacency_matrix, max_GA_generations = max_GA_generations, iterations_with_no_change = iterations_with_no_change_GA, number_of_spectra_partitions = number_of_spectra_partitions_graph, partitioning_method = partitioning_method_graph, plot_figures = plot_figures, plot_graphs = plot_graphs, plot_legends = plot_legends, classification_mode_graph = classification_mode_graph, features_to_use_for_graph = features_to_use_for_graph, tolerance_ppm = tolerance_ppm)
                     # MSI classification
                     if (plot_figures == TRUE) {
                         classification_ms_images_model <- model_classification$classification_msi_model
@@ -4182,7 +4173,7 @@ functions_mass_spectrometry <- function() {
                 }
                 if ("profile" %in% classification_mode) {
                     # Perform the classification
-                    model_classification_profile <- single_model_classification_of_spectra(spectra = sample_spectra_avg, model_x = model_list[[md]], model_name = list_of_models[md], preprocessing_parameters = NULL, peak_picking_algorithm = peak_picking_algorithm, deisotope_peaklist = deisotope_peaklist, peak_picking_SNR = 3, peak_filtering_frequency_threshold_percent = 0, low_intensity_peak_removal_threshold_percent = 0, low_intensity_peak_removal_threshold_method = "element-wise", tof_mode = tof_mode, allow_parallelization = allow_parallelization, pixel_grouping = pixel_grouping, number_of_hca_nodes = number_of_hca_nodes, moving_window_size = moving_window_size, seed = seed, correlation_method_for_adjacency_matrix = correlation_method_for_adjacency_matrix, correlation_threshold_for_adjacency_matrix = correlation_threshold_for_adjacency_matrix, pvalue_threshold_for_adjacency_matrix = pvalue_threshold_for_adjacency_matrix, max_GA_generations = max_GA_generations, iterations_with_no_change = iterations_with_no_change_GA, number_of_spectra_partitions = number_of_spectra_partitions_graph, partitioning_method = partitioning_method_graph, plot_figures = plot_figures, plot_graphs = plot_graphs, plot_legends = plot_legends, classification_mode_graph = classification_mode_graph, features_to_use_for_graph = features_to_use_for_graph)
+                    model_classification_profile <- single_model_classification_of_spectra(spectra = sample_spectra_avg, model_x = model_list[[md]], model_name = list_of_models[md], preprocessing_parameters = NULL, peak_picking_algorithm = peak_picking_algorithm, deisotope_peaklist = FALSE, peak_picking_SNR = 3, peak_filtering_frequency_threshold_percent = 0, low_intensity_peak_removal_threshold_percent = 0, low_intensity_peak_removal_threshold_method = "element-wise", tof_mode = tof_mode, allow_parallelization = allow_parallelization, pixel_grouping = pixel_grouping, number_of_hca_nodes = number_of_hca_nodes, moving_window_size = moving_window_size, seed = seed, correlation_method_for_adjacency_matrix = correlation_method_for_adjacency_matrix, correlation_threshold_for_adjacency_matrix = correlation_threshold_for_adjacency_matrix, pvalue_threshold_for_adjacency_matrix = pvalue_threshold_for_adjacency_matrix, max_GA_generations = max_GA_generations, iterations_with_no_change = iterations_with_no_change_GA, number_of_spectra_partitions = number_of_spectra_partitions_graph, partitioning_method = partitioning_method_graph, plot_figures = plot_figures, plot_graphs = plot_graphs, plot_legends = plot_legends, classification_mode_graph = classification_mode_graph, features_to_use_for_graph = features_to_use_for_graph)
                     # Plot AVG spectrum
                     if (plot_figures == TRUE) {
                         average_spectrum_profile_with_bars_model <- model_classification_profile$average_spectrum_with_bars
@@ -8838,6 +8829,7 @@ functions_mass_spectrometry <- function() {
 
 
 
+
 ##########################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################
 
 
@@ -8877,7 +8869,7 @@ spectral_typer <- function() {
     
     
     ### Program version (Specified by the program writer!!!!)
-    R_script_version <- "2017.07.12.0"
+    R_script_version <- "2017.07.13.0"
     ### Force update (in case something goes wrong after an update, when checking for updates and reading the variable force_update, the script can automatically download the latest working version, even if the rest of the script is corrupted, because it is the first thing that reads)
     force_update <- FALSE
     ### GitHub URL where the R file is
@@ -11150,12 +11142,12 @@ spectral_typer <- function() {
             } else if (isMassPeaks(peaks_test)) {
                 peaks_test_length <- 1
             }
-            setTkProgressBar(spectra_dump_progress_bar, value = 0.15, title = "Peak alignment...", label = "15 %")
+            #setTkProgressBar(spectra_dump_progress_bar, value = 0.15, title = "Peak alignment...", label = "15 %")
             ##### Merge peaklists for alignment
-            peaks_all <- append(peaks_reference, peaks_test)
-            peaks_all <- align_and_filter_peaks(peaks_all, peak_picking_algorithm = peak_picking_algorithm, tof_mode = tof_mode, peak_filtering_frequency_threshold_percent = 0, low_intensity_peak_removal_threshold_percent = 0, reference_peaklist = NULL, spectra = NULL, alignment_iterations = 5, allow_parallelization = allow_parallelization)
-            peaks_reference <- peaks_all[1:peaks_reference_length]
-            peaks_test <- peaks_all[(peaks_reference_length + 1):length(peaks_all)]
+            #peaks_all <- append(peaks_reference, peaks_test)
+            #peaks_all <- align_and_filter_peaks(peaks_all, peak_picking_algorithm = peak_picking_algorithm, tof_mode = tof_mode, peak_filtering_frequency_threshold_percent = 0, low_intensity_peak_removal_threshold_percent = 0, reference_peaklist = NULL, spectra = NULL, alignment_iterations = 5, allow_parallelization = allow_parallelization)
+            #peaks_reference <- peaks_all[1:peaks_reference_length]
+            #peaks_test <- peaks_all[(peaks_reference_length + 1):length(peaks_all)]
             ##### Get the filename from the entry (filename_subfolder)
             set_file_name()
             setTkProgressBar(spectra_dump_progress_bar, value = 0.20, title = "Creating folders...", label = "20 %")
