@@ -5,7 +5,7 @@ rm(list = ls())
 
 functions_mass_spectrometry <- function() {
     
-    ################## FUNCTIONS - MASS SPECTROMETRY 2017.07.13 ################
+    ################## FUNCTIONS - MASS SPECTROMETRY 2017.07.26 ################
     # Each function is assigned with <<- instead of <-, so when called by the huge functions_mass_spectrometry() function they go in the global environment, like as if the script was directly sourced from the file.
     
     
@@ -368,7 +368,7 @@ functions_mass_spectrometry <- function() {
     # This function adds two column to the peaklist matrix (rows: spectra/patients, columns: aligned peaks): Sample and Class, according to the file name.
     ### The name of the rows will be either the sample name or the class name (depending on the function parameter).
     # If the rows are named according to the sample name, an additional column for the class is added
-    matrix_add_class_and_sample <<- function(signal_matrix, peaks = list(), class_list = list(), spectra_format = "imzML", sample_output = TRUE, class_output = TRUE, row_labels = "Sample") {
+    matrix_add_class_and_sample <<- function(signal_matrix, peaks = list(), class_list = character(), spectra_format = "imzML", sample_output = TRUE, class_output = TRUE, row_labels = "Sample") {
         # Convert the input matrix/dataframe into a matrix
         if (!is.matrix(signal_matrix)) {
             signal_matrix <- as.matrix(signal_matrix)
@@ -2189,7 +2189,13 @@ functions_mass_spectrometry <- function() {
         ##### Define the smoothing half wondow size
         smoothing_half_window_size <- NULL
         if (tof_mode == "linear") {
-            if (!is.null(smoothing_strength) && smoothing_strength == "medium") {
+          if (!is.null(smoothing_strength) && smoothing_strength == "small") {
+            if (!is.null(smoothing_algorithm) && smoothing_algorithm == "SavitzkyGolay") {
+              smoothing_half_window_size <- 5
+            } else if (!is.null(smoothing_algorithm) && smoothing_algorithm == "MovingAverage") {
+              smoothing_half_window_size <- 1
+            }
+          } else if (!is.null(smoothing_strength) && smoothing_strength == "medium") {
                 if (!is.null(smoothing_algorithm) && smoothing_algorithm == "SavitzkyGolay") {
                     smoothing_half_window_size <- 10
                 } else if (!is.null(smoothing_algorithm) && smoothing_algorithm == "MovingAverage") {
@@ -2209,11 +2215,17 @@ functions_mass_spectrometry <- function() {
                 }
             }
         } else if (tof_mode == "reflectron") {
-            if (!is.null(smoothing_strength) && smoothing_strength == "medium") {
+          if (!is.null(smoothing_strength) && smoothing_strength == "small") {
+            if (!is.null(smoothing_algorithm) && smoothing_algorithm == "SavitzkyGolay") {
+              smoothing_half_window_size <- 1.5
+            } else if (!is.null(smoothing_algorithm) && smoothing_algorithm == "MovingAverage") {
+              smoothing_half_window_size <- 1
+            }
+          } else if (!is.null(smoothing_strength) && smoothing_strength == "medium") {
                 if (!is.null(smoothing_algorithm) && smoothing_algorithm == "SavitzkyGolay") {
                     smoothing_half_window_size <- 3
                 } else if (!is.null(smoothing_algorithm) && smoothing_algorithm == "MovingAverage") {
-                    smoothing_half_window_size <- 1
+                    smoothing_half_window_size <- 1.5
                 }
             } else if (!is.null(smoothing_strength) && smoothing_strength == "strong") {
                 if (!is.null(smoothing_algorithm) && smoothing_algorithm == "SavitzkyGolay") {
@@ -3176,15 +3188,22 @@ functions_mass_spectrometry <- function() {
                 }
             }
             names(peaks_aligned) <- peaks_names
-            ##### Align to a reference peaklist: AVERAGE SPECTRUM (if a spectra list is provided)
-            if (is.character(reference_peaklist) && reference_peaklist == "average" && !is.null(spectra)) {
+            ##### Align to a reference peaklist: AVERAGE SPECTRUM or SKYLINE SPECTRUM (if a spectra list is provided)
+            if (is.character(reference_peaklist) && reference_peaklist == "average spectrum" && !is.null(spectra)) {
                 # Average the spectra
                 average_spectrum <- averageMassSpectra(spectra, method = "mean")
                 # Peak picking
                 average_spectrum_peaks <- peak_picking(average_spectrum, peak_picking_algorithm = peak_picking_algorithm, SNR = 3, allow_parallelization = allow_parallelization)
                 # The reference peaklist is the paklist of the average spectrum
                 reference_peaklist <- createMassPeaks(mass = average_spectrum_peaks@mass, intensity = average_spectrum_peaks@intensity, snr = rep.int(5, length(average_spectrum_peaks@mass)), metaData = list(name = "Reference peaklist AVG"))
-            } else if (is.character(reference_peaklist) && reference_peaklist == "average" && is.null(spectra)) {
+            } else if (is.character(reference_peaklist) && reference_peaklist == "skyline spectrum" && !is.null(spectra)) {
+                # Average the spectra
+                skyline_spectrum <- averageMassSpectra(spectra, method = "sum")
+                # Peak picking
+                skyline_spectrum_peaks <- peak_picking(skyline_spectrum, peak_picking_algorithm = peak_picking_algorithm, SNR = 3, allow_parallelization = allow_parallelization)
+                # The reference peaklist is the paklist of the average spectrum
+                reference_peaklist <- createMassPeaks(mass = skyline_spectrum_peaks@mass, intensity = skyline_spectrum_peaks@intensity, snr = rep.int(5, length(skyline_spectrum_peaks@mass)), metaData = list(name = "Reference peaklist Skyline"))
+            } else if (is.character(reference_peaklist) && (reference_peaklist == "average spectrum" || reference_peaklist == "skyline spectrum") && is.null(spectra)) {
                 reference_peaklist <- NULL
             } else if (!is.null(reference_peaklist) && is.vector(reference_peaklist)) {
                 reference_peaklist <- createMassPeaks(mass = as.numeric(reference_peaklist), intensity = rep.int(1, length(reference_peaklist)), snr = rep.int(5, length(reference_peaklist)), metaData = list(name = "Reference peaklist"))
@@ -4884,28 +4903,28 @@ functions_mass_spectrometry <- function() {
         }
         ### Define the control function of the RFE
         rfe_ctrl <- rfeControl(functions = caretFuncs, method = "repeatedcv", repeats = cv_repeats_control, number = k_fold_cv_control, saveDetails = TRUE, allowParallel = allow_parallelization, rerank = feature_reranking, seeds = NULL)
+        # Two classes
         if (length(levels(as.factor(training_set[,discriminant_attribute]))) == 2) {
             train_ctrl <- trainControl(method = "repeatedcv", repeats = cv_repeats_control, number = k_fold_cv_control, allowParallel = allow_parallelization, seeds = NULL, classProbs = TRUE, summaryFunction = twoClassSummary)
         } else if (length(levels(as.factor(training_set[,discriminant_attribute]))) > 2) {
+            # Multi-classes
             train_ctrl <- trainControl(method = "repeatedcv", repeats = cv_repeats_control, number = k_fold_cv_control, allowParallel = allow_parallelization, seeds = NULL, classProbs = TRUE, summaryFunction = multiClassSummary)
         }
         ### Model tuning is performed during feature selection (best choice)
         if (!is.null(model_tuning) && model_tuning == "embedded" && is.list(model_tune_grid)) {
             # Run the RFE
             rfe_model <- rfe(x = training_set[, !(names(training_set) %in% non_features)], y = as.factor(training_set[,discriminant_attribute]), sizes = subset_sizes, rfeControl = rfe_ctrl, trControl = train_ctrl, method = selection_method, metric = selection_metric, preProcess = preprocessing, tuneGrid = expand.grid(model_tune_grid))
-            # Model performances
-            if (selection_metric == "kappa" || selection_metric == "Kappa") {
-                fs_model_performance <- as.numeric(max(rfe_model$fit$results$Kappa, na.rm = TRUE))
-                names(fs_model_performance) <- "Kappa"
-            } else if (selection_metric == "accuracy" || selection_metric == "Accuracy") {
-                fs_model_performance <- as.numeric(max(rfe_model$fit$results$Accuracy, na.rm = TRUE))
-                names(fs_model_performance) <- "Accuracy"
-            }
         } else if (is.null(model_tuning) || model_tuning == "after" || (model_tuning == "no" || model_tuning == "none")) {
             ### Tuning will be performed afterwards with only the features selected by RFE: now, only a small tuning is performed
             # Run the RFE
             rfe_model <- rfe(x = training_set[, !(names(training_set) %in% non_features)], y = as.factor(training_set[,discriminant_attribute]), sizes = subset_sizes, rfeControl = rfe_ctrl, trControl = train_ctrl, method = selection_method, metric = selection_metric, preProcess = preprocessing)
-            # Model performances
+        }
+        ### Model performances: two classes (ROC)
+        if (length(levels(as.factor(training_set[,discriminant_attribute]))) == 2) {
+                fs_model_performance <- as.numeric(max(rfe_model$fit$results$ROC, na.rm = TRUE))
+                names(fs_model_performance) <- "ROC AUC"
+        } else if (length(levels(as.factor(training_set[,discriminant_attribute]))) > 2) {
+            ### Model performances: multi-classes (Accuracy or Kappa)
             if (selection_metric == "kappa" || selection_metric == "Kappa") {
                 fs_model_performance <- as.numeric(max(rfe_model$fit$results$Kappa, na.rm = TRUE))
                 names(fs_model_performance) <- "Kappa"
@@ -4983,13 +5002,19 @@ functions_mass_spectrometry <- function() {
             } else {
                 model_tuning_graphics <- NULL
             }
-            # Model performances
-            if (selection_metric == "kappa" || selection_metric == "Kappa") {
-                fs_model_performance_tuning <- as.numeric(max(fs_model_tuning$results$Kappa, na.rm = TRUE))
-                names(fs_model_performance_tuning) <- "Kappa"
-            } else if (selection_metric == "accuracy" || selection_metric == "Accuracy") {
-                fs_model_performance_tuning <- as.numeric(max(fs_model_tuning$results$Accuracy, na.rm = TRUE))
-                names(fs_model_performance_tuning) <- "Accuracy"
+            ### Model performances: two classes (ROC)
+            if (length(levels(as.factor(training_set[,discriminant_attribute]))) == 2) {
+                fs_model_performance_tuning <- as.numeric(max(fs_model_tuning$results$ROC, na.rm = TRUE))
+                names(fs_model_performance_tuning) <- "ROC AUC"
+            } else if (length(levels(as.factor(training_set[,discriminant_attribute]))) > 2) {
+                ### Model performances: multi-classes (Accuracy or Kappa)
+                if (selection_metric == "kappa" || selection_metric == "Kappa") {
+                    fs_model_performance_tuning <- as.numeric(max(fs_model_tuning$results$Kappa, na.rm = TRUE))
+                    names(fs_model_performance_tuning) <- "Kappa"
+                } else if (selection_metric == "accuracy" || selection_metric == "Accuracy") {
+                    fs_model_performance_tuning <- as.numeric(max(fs_model_tuning$results$Accuracy, na.rm = TRUE))
+                    names(fs_model_performance_tuning) <- "Accuracy"
+                }
             }
             ## Keep the model and the performance values only if the tuning yields more performances that just after the RFE
             if (fs_model_performance_tuning > fs_model_performance) {
@@ -8833,6 +8858,7 @@ functions_mass_spectrometry <- function() {
 
 
 
+
 ##########################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################
 
 
@@ -8872,7 +8898,7 @@ spectral_typer <- function() {
     
     
     ### Program version (Specified by the program writer!!!!)
-    R_script_version <- "2017.07.13.1"
+    R_script_version <- "2017.07.26.0"
     ### Force update (in case something goes wrong after an update, when checking for updates and reading the variable force_update, the script can automatically download the latest working version, even if the rest of the script is corrupted, because it is the first thing that reads)
     force_update <- FALSE
     ### GitHub URL where the R file is
@@ -9208,7 +9234,7 @@ spectral_typer <- function() {
             }
             # Strength
             if (!is.null(smoothing_algorithm)) {
-                smoothing_strength <- select.list(c("medium", "strong", "stronger"), title = "Smoothing strength", multiple = FALSE, preselect = "medium")
+                smoothing_strength <- select.list(c("small", "medium", "strong", "stronger"), title = "Smoothing strength", multiple = FALSE, preselect = "medium")
                 # Raise the focus on the preproc window
                 tkraise(window)
                 tkraise(preproc_window)
@@ -10119,7 +10145,6 @@ spectral_typer <- function() {
                         spectra_reference <- preprocess_spectra(spectra_reference, tof_mode = tof_mode, preprocessing_parameters = list(mass_range = mass_range, transformation_algorithm = transform_data_algorithm, smoothing_algorithm = smoothing_algorithm, smoothing_strength = smoothing_strength, baseline_subtraction_algorithm = baseline_subtraction_algorithm, baseline_subtraction_algorithm_parameter = baseline_subtraction_algorithm_parameter, normalization_algorithm = normalization_algorithm, normalization_mass_range = normalization_mass_range, preprocess_spectra_in_packages_of = preprocess_spectra_in_packages_of, spectral_alignment_algorithm = NULL, spectral_alignment_reference = NULL), allow_parallelization = allow_parallelization, tolerance_ppm = tolerance_ppm)
                     } else {
                         # If there are only files, just replace the sample name field in the spectra (as if group_spectra_class had been run)
-                        spectra_reference <- preprocess_spectra(spectra_reference, tof_mode = tof_mode, preprocessing_parameters = list(mass_range = mass_range, transformation_algorithm = transform_data_algorithm, smoothing_algorithm = smoothing_algorithm, smoothing_strength = smoothing_strength, baseline_subtraction_algorithm = baseline_subtraction_algorithm, baseline_subtraction_algorithm_parameter = baseline_subtraction_algorithm_parameter, normalization_algorithm = normalization_algorithm, normalization_mass_range = normalization_mass_range, preprocess_spectra_in_packages_of = preprocess_spectra_in_packages_of, spectral_alignment_algorithm = NULL, spectral_alignment_reference = NULL), allow_parallelization = allow_parallelization, tolerance_ppm = tolerance_ppm)
                         spectra_reference <- replace_sample_name(spectra_reference, spectra_format = spectra_format, allow_parallelization = allow_parallelization)
                     }
                 }
@@ -11659,3 +11684,4 @@ functions_mass_spectrometry()
 
 ### Run the function
 spectral_typer()
+
